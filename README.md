@@ -1,6 +1,7 @@
 backup-web-drugPurchasing
 
 เวอร์ชั่นก่อนหน้า 1 - 6 เป็นเว็บเบิก อยู่ GithubforDevolopers มีเฉพาะ การเบิกยาไม่มี งานจัดซื้อ
+
 version 7.1 แก้ไขprocess.php เนื่องจากคำนวณ ราคารวมแต่ละรายการไม่ถูกต้อง
 
 Version.7.0
