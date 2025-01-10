@@ -1,4 +1,5 @@
 backup-web-drugPurchasing
+
 Version.7.0
 เพิ่มรายการหน้าจัดซื้อ หลังเบิกยาเสสร็จแล้วทุกหน่วยเบิก จะประมวลผลผ่าน
 -โฟล์เดอร์ Purchasing>process.php แล้วบันทึกลงฐานข้อมูลตาราง processed
