@@ -4,22 +4,28 @@ include '../config.php';
 // รับค่าจากฟอร์ม
 $status = isset($_POST['status']) ? $_POST['status'] : '';
 
-// ตรวจสอบสถานะที่เลือก
-// echo "Selected Status: " . htmlspecialchars($status);
-
 // Handle save operation
 $notification = '';
 $duplicateEntries = []; // เก็บรายการข้อมูลที่ซ้ำกัน
 if (isset($_POST['save'])) {
     try {
         // ดึงข้อมูลที่จะบันทึก
-        $query = "SELECT working_code, item_code, format_item_code, SUM(quantity) as total_quantity, price, remarks, packing_size, SUM(total_value) as total_value, status
+        $query = "SELECT 
+                    working_code, 
+                    item_code, 
+                    format_item_code, 
+                    SUM(quantity) as total_quantity, 
+                    price, 
+                    (price * SUM(quantity)) AS total_value, 
+                    remarks, 
+                    packing_size, 
+                    status 
                   FROM po";
         if ($status && $status !== 'All') {
             $query .= " WHERE status = :status";
         }
         $query .= " GROUP BY working_code, item_code, format_item_code, price, remarks, packing_size, status";
-        $query .= " ORDER BY working_code"; // เพิ่มการเรียงลำดับตาม working_code
+        $query .= " ORDER BY working_code";
         $stmt = $con->prepare($query);
         if ($status && $status !== 'All') {
             $stmt->bindParam(':status', $status);
@@ -31,10 +37,7 @@ if (isset($_POST['save'])) {
         $checkQuery = "SELECT purchase_status FROM processed WHERE working_code = :working_code AND item_code = :item_code AND format_item_code = :format_item_code";
         $checkStmt = $con->prepare($checkQuery);
 
-        $duplicateCount = 0; // ตัวนับสำหรับข้อมูลที่ซ้ำกัน
-
         foreach ($data as $row) {
-            // ตรวจสอบว่าข้อมูลมีอยู่แล้วหรือไม่
             $checkStmt->execute([
                 ':working_code' => $row['working_code'],
                 ':item_code' => $row['item_code'],
@@ -43,14 +46,12 @@ if (isset($_POST['save'])) {
             $existingRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existingRow) {
-                $row['purchase_status'] = $existingRow['purchase_status']; // เพิ่มสถานะการจัดซื้อจากตาราง processed
-                $duplicateEntries[] = $row; // เพิ่มรายการข้อมูลที่ซ้ำกัน
-                $duplicateCount++; // เพิ่มตัวนับเมื่อพบข้อมูลที่ซ้ำกัน
+                $row['purchase_status'] = $existingRow['purchase_status'];
+                $duplicateEntries[] = $row;
             }
         }
 
-        if ($duplicateCount > 0) {
-            // เก็บรายการข้อมูลที่ซ้ำกันใน session เพื่อแสดงในหน้าใหม่
+        if (count($duplicateEntries) > 0) {
             session_start();
             $_SESSION['duplicate_entries'] = $duplicateEntries;
             $notification = 'Swal.fire({
@@ -66,16 +67,15 @@ if (isset($_POST['save'])) {
                 }
             });';
         } else {
-            // เตรียมคำสั่ง SQL สำหรับการบันทึกข้อมูล
-            $insertQuery = "INSERT INTO processed (working_code, item_code, format_item_code, total_quantity, price, remarks, packing_size, total_value, status, purchase_status)
-                            VALUES (:working_code, :item_code, :format_item_code, :total_quantity, :price, :remarks, :packing_size, :total_value, :status, :purchase_status)";
-            $insertStmt = $conn->prepare($insertQuery);
+            // บันทึกข้อมูลใหม่
+            $insertQuery = "INSERT INTO processed 
+                            (working_code, item_code, format_item_code, total_quantity, price, remarks, packing_size, total_value, status, purchase_status)
+                            VALUES 
+                            (:working_code, :item_code, :format_item_code, :total_quantity, :price, :remarks, :packing_size, :total_value, :status, :purchase_status)";
+            $insertStmt = $con->prepare($insertQuery);
 
             foreach ($data as $row) {
-                // ตรวจสอบให้แน่ใจว่าสถานะตรงกับค่าที่กำหนดในตาราง processed
-                $validStatuses = ['อนุมัติ', 'รออนุมัติ', 'ยกเลิกใบเบิก', 'Completed'];
-                $statusValue = in_array($row['status'], $validStatuses) ? $row['status'] : 'รออนุมัติ';
-
+                $statusValue = in_array($row['status'], ['อนุมัติ', 'รออนุมัติ', 'ยกเลิกใบเบิก', 'Completed']) ? $row['status'] : 'รออนุมัติ';
                 $purchaseStatus = isset($_POST['purchase_status'][$row['working_code']]) ? $_POST['purchase_status'][$row['working_code']] : 'GPO';
 
                 $insertStmt->execute([
@@ -98,7 +98,6 @@ if (isset($_POST['save'])) {
         $notification = 'Swal.fire("Error", "Error: ' . $e->getMessage() . '", "error");';
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -128,37 +127,30 @@ if (isset($_POST['save'])) {
         
         <?php
         try {
-            // SQL Query
             $query = "SELECT 
                         working_code, 
                         item_code, 
                         format_item_code, 
                         SUM(quantity) as total_quantity, 
                         price, 
+                        (price * SUM(quantity)) AS total_value, 
                         remarks, 
                         packing_size, 
-                        SUM(total_value) as total_value, 
                         status 
                       FROM po";
-
-            // ถ้ามีการเลือกสถานะ ให้เพิ่มเงื่อนไขในการกรอง
             if ($status && $status !== 'All') {
                 $query .= " WHERE status = :status";
             }
-
             $query .= " GROUP BY working_code, item_code, format_item_code, price, remarks, packing_size, status";
-            $query .= " ORDER BY working_code"; // เพิ่มการเรียงลำดับตาม working_code
+            $query .= " ORDER BY working_code";
 
             $stmt = $con->prepare($query);
-
-            // Bind ค่า status
             if ($status && $status !== 'All') {
                 $stmt->bindParam(':status', $status);
             }
 
             $stmt->execute();
 
-            // แสดงข้อมูล
             if ($stmt->rowCount() > 0) {
                 $totalValue = 0;
                 echo '<form method="post">';
@@ -181,7 +173,6 @@ if (isset($_POST['save'])) {
                 echo '</thead>';
                 echo '<tbody>';
 
-                // ดึงข้อมูลและแสดงผล
                 $index = 1;
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                     $totalValue += $row['total_value'];
@@ -226,8 +217,10 @@ if (isset($_POST['save'])) {
         }
         ?>
     </div>
-    <script>
-        <?php echo $notification; ?>
-    </script>
+    <?php if ($notification) : ?>
+        <script>
+            <?php echo $notification; ?>
+        </script>
+    <?php endif; ?>
 </body>
 </html>
