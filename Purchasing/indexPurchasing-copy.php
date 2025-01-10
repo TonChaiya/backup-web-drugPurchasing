@@ -1,0 +1,115 @@
+<?php 
+require '../config.php';  // เชื่อมต่อฐานข้อมูล
+include_once '../admin/nav.php'; // เพิ่มส่วนของเมนูนำทาง
+
+// ดึงข้อมูล status ที่ไม่ซ้ำจากตาราง po
+$query = "SELECT DISTINCT status FROM po";
+$stmt = $con->prepare($query);
+$stmt->execute();
+$statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ดึงจำนวนรายการในตาราง processed
+$processedQuery = "SELECT COUNT(*) as count FROM processed";
+$processedStmt = $con->prepare($processedQuery);
+$processedStmt->execute();
+$processedCount = $processedStmt->fetch(PDO::FETCH_ASSOC)['count'];
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .blinking {
+            animation: blinkingText 1.5s infinite;
+        }
+        @keyframes blinkingText {
+            0% { color: green; }
+            50% { color: lightgreen; }
+            100% { color: green; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center min-h-screen">
+    <!-- รวม nav.php ด้านบนของฟอร์ม -->
+    <div class="w-full">
+        <?php include_once '../admin/nav.php'; ?>
+    </div>
+
+    <form method="post" action="process.php" class="bg-white p-8 rounded-lg shadow-lg w-full max-w-full mt-6">        <h1 class="text-3xl font-bold mb-6 text-center">เลือกสถานะ</h1>
+        <div class="mb-6">
+            <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Select Status</label>
+            <select id="status" name="status" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <option value="">All</option>
+                <?php 
+                // แสดงรายการ status ที่ดึงมาจากฐานข้อมูล
+                foreach ($statuses as $row) {
+                    echo '<option value="' . htmlspecialchars($row['status']) . '">' . htmlspecialchars($row['status']) . '</option>';
+                }
+                ?>
+            </select>
+        </div>
+        <div class="mb-6">
+            <p class="text-sm font-medium text-gray-700"><strong>Processed Entries:</strong> <span class="blinking"><?php echo $processedCount; ?></span></p>
+        </div>
+        <button type="submit" name="process" class="bg-blue-500 text-white w-full py-2 rounded-lg hover:bg-blue-600 mb-6">ประมวลผล</button>
+        
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <button type="button" class="bg-green-500 text-white w-full py-2 rounded-lg hover:bg-green-600 mb-2" onclick="showReportOptions('GPO')">จัดซื้อ GPO</button>
+            </div>
+            
+            <div>
+                <button type="button" class="bg-yellow-500 text-white w-full py-2 rounded-lg hover:bg-yellow-600 mb-2" onclick="showReportOptions('จัดซื้อบริษัท')">จัดซื้อบริษัท</button>
+            </div>
+            
+            <div>
+                <button type="button" class="bg-gray-500 text-white w-full py-2 rounded-lg hover:bg-gray-600 mb-2" onclick="showReportOptions('บันทึกข้อความ')">บันทึกข้อความ</button>
+            </div>
+        </div>
+    </form>
+    <script>
+        function showReportOptions(status) {
+            Swal.fire({
+                title: 'Select Report Format',
+                text: `Generate report for ${status}`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'PDF',
+                cancelButtonText: 'Word'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    generateReport('pdf', status);
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    generateReport('word', status);
+                }
+            });
+        }
+
+        function generateReport(format, status) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to generate a ${format.toUpperCase()} report for ${status}.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, generate it!',
+                cancelButtonText: 'No, cancel!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const encodedStatus = encodeURIComponent(status);
+                    const url = 'generate_report.php?format=' + format + '&status=' + encodedStatus;
+                    if (format === 'pdf') {
+                        window.open(url, '_blank');
+                    } else {
+                        window.location.href = url;
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
