@@ -21,7 +21,7 @@ try {
     // ดึงข้อมูลใบเบิกที่อยู่ในช่วงวันที่และสถานะ 'อนุมัติ'
     $stmt = $con->prepare("
         SELECT po_number, DATE(date) as date, dept_id, working_code, item_code, format_item_code, 
-               quantity, price, remarks, packing_size, total_value
+               quantity, price, remarks, packing_size
         FROM po 
         WHERE DATE(date) BETWEEN :start_date AND :end_date 
           AND status = 'อนุมัติ'
@@ -32,9 +32,16 @@ try {
     $stmt->execute();
     $date_range_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // คำนวณจำนวนรายการทั้งหมดและมูลค่ารวม
+    // คำนวณจำนวนรายการทั้งหมดและมูลค่ารวมทั้งหมด
     $total_items = count($date_range_records);
-    $grand_total = array_sum(array_column($date_range_records, 'total_value'));
+    $grand_total = 0; // กำหนดค่าเริ่มต้นสำหรับมูลค่ารวมทั้งหมด
+
+    foreach ($date_range_records as $index => $record) {
+        // คำนวณมูลค่ารวมโดยคูณ quantity และ price สำหรับแต่ละแถว
+        $total_value = $record['quantity'] * $record['price']; // คำนวณมูลค่ารวม
+        $grand_total += $total_value; // เพิ่มมูลค่ารวม
+        $date_range_records[$index]['total_value'] = $total_value; // เก็บค่า total_value ในแต่ละ record
+    }
 } catch (PDOException $e) {
     echo '<p class="text-red-500">Error: ' . htmlspecialchars($e->getMessage()) . '</p>';
     exit;
@@ -91,7 +98,7 @@ function format_date_th($date) {
                         <td class="py-2 px-4 border-b"><?php echo htmlspecialchars($record['price']); ?></td>
                         <td class="py-2 px-4 border-b"><?php echo htmlspecialchars($record['remarks']); ?></td>
                         <td class="py-2 px-4 border-b"><?php echo htmlspecialchars($record['packing_size']); ?></td>
-                        <td class="py-2 px-4 border-b"><?php echo number_format($record['total_value'], 2); ?></td>
+                        <td class="py-2 px-4 border-b"><?php echo number_format($record['total_value'], 2); ?> บาท</td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -110,5 +117,38 @@ function format_date_th($date) {
         <p class="text-gray-500 mt-4 text-center">ไม่พบข้อมูลในช่วงวันที่ที่กำหนด</p>
     <?php endif; ?>
 </div>
+
+<!-- ปุ่ม "ขึ้นสุด" -->
+<button id="scrollToTopBtn" class="fixed bottom-20 right-4 bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-400 focus:outline-none z-10">
+    ขึ้นสุด
+</button>
+
+<!-- ปุ่ม "ลงสุด" -->
+<button id="scrollToBottomBtn" class="fixed bottom-4 right-4 bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-400 focus:outline-none z-10">
+    ลงสุด
+</button>
+
+<script>
+    // ฟังก์ชันเลื่อนหน้าจอไปบนสุด
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    // ฟังก์ชันเลื่อนหน้าจอไปล่างสุด
+    function scrollToBottom() {
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+
+    // ตั้งค่า event ให้กับปุ่ม
+    document.getElementById('scrollToTopBtn').addEventListener('click', scrollToTop);
+    document.getElementById('scrollToBottomBtn').addEventListener('click', scrollToBottom);
+</script>
+
 </body>
 </html>

@@ -25,7 +25,13 @@ if ($format == 'pdf') {
         include '../Purchasing/report_generators/generate_notepdf.php';
     }
 } elseif ($format == 'word') {
-    include '../Purchasing/report_generators/generate_word.php';
+    if ($status == 'GPO') {
+        include '../Purchasing/report_generators/generate_word.php';
+    } elseif ($status == 'จัดซื้อบริษัท') {
+        include '../Purchasing/report_generators/generate_purchase_word.php';
+    } elseif ($status == 'บันทึกข้อความ') {
+        include '../Purchasing/report_generators/generate_noteword.php';
+    }
 } else {
     echo "รูปแบบไฟล์ไม่ถูกต้อง";
 }

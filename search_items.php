@@ -1,28 +1,30 @@
-<?php 
+<?php
 session_start();
+header('Content-Type: application/json; charset=utf-8'); // ตั้งค่า header เป็น UTF-8
 include 'config.php';
 
 $query = trim($_GET['query'] ?? '');
 
 try {
     if (empty($query)) {
-        echo json_encode([]);
+        echo json_encode([], JSON_UNESCAPED_UNICODE); // ส่งค่าว่างกลับหากไม่มีคำค้นหา
         exit;
     }
 
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password, [
+    // สร้างการเชื่อมต่อ PDO
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_EMULATE_PREPARES => false
     ]);
 
-    // เพิ่มการดึงราคาด้วยใน SQL
+    // ค้นหาข้อมูลจากฐานข้อมูล
     $stmt = $pdo->prepare("SELECT name_item_code, working_code, format_item, packing_code, price_unit_code FROM drug_list WHERE name_item_code LIKE :query LIMIT 10");
     $query_param = "%$query%";
     $stmt->bindParam(':query', $query_param, PDO::PARAM_STR);
     $stmt->execute();
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // ป้องกัน XSS และเพิ่มราคาในข้อมูลที่ส่งกลับ
+    // ป้องกัน XSS และจัดรูปแบบข้อมูล
     $sanitized_items = array_map(function($item) {
         return [
             'name_item_code' => htmlspecialchars($item['name_item_code'], ENT_QUOTES, 'UTF-8'),
@@ -33,8 +35,13 @@ try {
         ];
     }, $items);
 
-    echo json_encode($sanitized_items);
+    // ส่งข้อมูลกลับเป็น JSON
+    echo json_encode($sanitized_items, JSON_UNESCAPED_UNICODE); // รองรับภาษาไทย
 } catch (PDOException $e) {
+    // บันทึกข้อผิดพลาดลงไฟล์ log
     error_log("Database error: " . $e->getMessage());
-    echo json_encode(['error' => 'An error occurred while processing your request.']);
+
+    // ส่งข้อความข้อผิดพลาดกลับ
+    echo json_encode(['error' => 'An error occurred while processing your request.'], JSON_UNESCAPED_UNICODE);
 }
+?>

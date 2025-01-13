@@ -4,20 +4,23 @@ require_once __DIR__ . '/vendor/tecnickcom/tcpdf/tcpdf.php';
 
 class MYPDF extends TCPDF {
     public $po_number = '';
+    public $requisition_date = '';
+    public $dept_name = ''; // เพิ่ม property สำหรับชื่อหน่วยงาน
     public $has_data = true; // ตั้งค่าสำหรับการแสดงหัวตารางเมื่อมีข้อมูล
 
     public function Header() {
-        // ส่วนหัวรายงาน
-        $this->SetY(15); 
+        $this->SetY(15);
         $this->SetFont('thsarabunnew', 'B', 16);
         $this->Cell(0, 10, 'รายงานใบเบิกยา', 0, 1, 'C');
         $this->SetFont('thsarabunnew', '', 12);
 
-        // แสดงเลขที่ใบเบิกและข้อมูลโรงพยาบาล
-        $this->Cell(0, 5, 'เลขที่ใบเบิก: ' . $this->po_number, 0, 1, 'L');
-        $hospital_name = isset($_SESSION['hospital_name']) ? $_SESSION['hospital_name'] : 'ไม่ระบุโรงพยาบาล';
-        $this->Cell(95, 5, 'รพ.สต : ' . $hospital_name, 0, 0, 'L');
-        $this->Cell(95, 5, 'วันที่เบิก: ' . date('Y-m-d H:i:s'), 0, 1, 'R');
+        // แสดงชื่อหน่วยงานที่ดึงมาจากฐานข้อมูล
+        $this->Cell(95, 5, 'รพ.สต : ' . $this->dept_name, 0, 0, 'L');
+        $this->Cell(95, 5, 'วันที่เบิก: ' . $this->requisition_date, 0, 1, 'R');
+
+        // เพิ่มเลขที่ใบเบิก
+        $this->Cell(95, 5, 'เลขที่ใบเบิก: ' . $this->po_number, 0, 1, 'L');
+
         $this->Ln(5);
 
         // แสดงหัวตารางถ้ามีข้อมูล
@@ -49,23 +52,34 @@ class MYPDF extends TCPDF {
     }
 }
 
+include('config.php');
+
+$po_number = $_GET['po_number'];
+
+// ดึงข้อมูลจากฐานข้อมูล
+$stmt = $con->prepare("SELECT *, DATE_FORMAT(date, '%d/%m/%Y') AS formatted_date FROM po WHERE po_number = :po_number");
+$stmt->bindParam(':po_number', $po_number);
+$stmt->execute();
+$poData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ตรวจสอบว่ามีข้อมูลในฐานข้อมูลหรือไม่
+if (!$poData) {
+    die('ไม่พบข้อมูลใบเบิกหมายเลข ' . htmlspecialchars($po_number));
+}
+
+// กำหนดวันที่เบิกและชื่อหน่วยงาน
+$requisition_date = $poData[0]['formatted_date'];
+$dept_name = $poData[0]['dept_id']; // ดึงชื่อหน่วยงานจากคอลัมน์ dept_id
+
 $pdf = new MYPDF();
 $pdf->SetMargins(15, 48, 10);
 $pdf->SetAutoPageBreak(true, 15);
 
-$po_number = $_GET['po_number'];
 $pdf->po_number = $po_number;
-
+$pdf->requisition_date = $requisition_date;
+$pdf->dept_name = $dept_name; // กำหนดชื่อหน่วยงาน
 $pdf->AddPage('P', 'A4');
 $pdf->SetFont('thsarabunnew', '', 12);
-
-include('config.php');
-
-// ดึงข้อมูลจากฐานข้อมูล
-$stmt = $con->prepare("SELECT * FROM po WHERE po_number = :po_number");
-$stmt->bindParam(':po_number', $po_number);
-$stmt->execute();
-$poData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $pdf->has_data = count($poData) > 0; // ตรวจสอบว่ามีข้อมูลหรือไม่
 
@@ -73,22 +87,8 @@ $pdf->has_data = count($poData) > 0; // ตรวจสอบว่ามีข�
 $html = '<table cellpadding="3">';
 $index = 1;
 $totalValue = 0;
-$rows_per_page = 30;
-$current_row = 0;
 
 foreach ($poData as $row) {
-    if ($current_row > 0 && $current_row % $rows_per_page === 0) {
-        $html .= '</table>';
-        $pdf->writeHTML($html, true, false, true, false, '');
-
-        // ตรวจสอบพื้นที่ก่อนเพิ่มเนื้อหาใหม่
-        if ($pdf->GetY() + 50 > $pdf->getPageHeight() - 30) {
-            $pdf->AddPage(); // เพิ่มหน้าใหม่หากพื้นที่ไม่เพียงพอ
-        }
-
-        $html = '<table cellpadding="3">';
-    }
-
     $totalValue += $row['total_value'];
     $html .= '<tr>
                 <td width="5%" align="center">' . $index++ . '</td>
@@ -101,27 +101,18 @@ foreach ($poData as $row) {
                 <td width="10%" align="right">' . number_format($row['total_value'], 2) . '</td>
                 <td width="15%" align="left">' . htmlspecialchars($row['remarks']) . '</td>
               </tr>';
-    $current_row++;
 }
 
-// ปิดตารางและเขียน HTML ของหน้าสุดท้าย
-if ($current_row > 0) {
-    $html .= '<tr>
-                <td colspan="7" align="right"><strong>รวมมูลค่าทั้งหมด</strong></td>
-                <td align="right"><strong>' . number_format($totalValue, 2) . '</strong></td>
-                <td></td>
-              </tr>';
-    $html .= '</table>';
-    $pdf->writeHTML($html, true, false, true, false, '');
-}
-
-// ตรวจสอบพื้นที่และสร้างหน้าสำหรับลายเซ็นถ้าจำเป็น
-if ($pdf->GetY() + 50 > $pdf->getPageHeight() - 30 || ($current_row > 0 && $current_row % $rows_per_page === 0)) {
-    $pdf->AddPage();
-}
+$html .= '<tr>
+            <td colspan="7" align="right"><strong>รวมมูลค่าทั้งหมด</strong></td>
+            <td align="right"><strong>' . number_format($totalValue, 2) . '</strong></td>
+            <td></td>
+          </tr>';
+$html .= '</table>';
+$pdf->writeHTML($html, true, false, true, false, '');
 
 // เพิ่มบล็อกลายเซ็นที่ท้ายกระดาษ
-$pdf->SetY(-40); // ตั้งค่าตำแหน่งให้ลายเซ็นอยู่ใกล้ท้ายกระดาษเสมอ
+$pdf->SetY(-40);
 $pdf->Cell(80, 10, 'ลงชื่อ........................................ผู้เบิก', 0, 0, 'C');
 $pdf->Cell(80, 10, 'ลงชื่อ........................................ผู้รับรอง', 0, 1, 'C');
 $pdf->Cell(80, 5, '(...................................................)', 0, 0, 'C');
