@@ -10,17 +10,20 @@ $stmt = $con->prepare($query);
 $stmt->execute([':status' => $status]);
 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// สร้าง PDF ด้วย TCPDF
 class CustomPDF extends TCPDF {
-    // ปิด Header
+    // ปรับแต่ง Header
     public function Header() {
-        // เพิ่มหมายเลขหน้าตรงกลางด้านบนสุด
-        $this->SetY(15); // ปรับระยะห่างจากขอบบน
-        $this->SetFont('thsarabunit', '', 16);
-        $this->Cell(0, 10, $this->getAliasNumPage(), 0, false, 'C', 0, '', 0, false, 'T', 'M');
-        // เลื่อนข้อความที่เหลือลงมาอีก 1 บรรทัด
-        $this->Ln(20); // เพิ่มระยะห่างหลังจากหมายเลขหน้า
+        // ตรวจสอบว่าหน้านี้ไม่ใช่หน้าแรก (หน้าที่ 1)
+        if ($this->getPage() > 1) {
+            // เพิ่มหมายเลขหน้าตรงกลางด้านบนสุด
+            $this->SetY(15); // ปรับระยะห่างจากขอบบน
+            $this->SetFont('thsarabunit', '', 16);
+            $this->Cell(0, 10, $this->getAliasNumPage(), 0, false, 'C', 0, '', 0, false, 'T', 'M');
+            // เลื่อนข้อความที่เหลือลงมาอีก 1 บรรทัด
+            $this->Ln(20); // เพิ่มระยะห่างหลังจากหมายเลขหน้า
+        }
     }
+
     // ปิด Footer
     public function Footer() {}
 }
@@ -50,16 +53,30 @@ $pdf->SetHeaderMargin(5);  // ระยะขอบสำหรับ Header
 $pdf->SetFooterMargin($bottom_margin);
 $pdf->SetAutoPageBreak(TRUE, $bottom_margin);
 
-// เพิ่มหน้า PDF
+// เพิ่มหน้า PDF แรก
 $pdf->AddPage();
 
-// คำนวณขนาดตัวอักษร
-$font_size_mm = 16; // กำหนดขนาดตัวอักษร
-
 // ตั้งค่าฟอนต์
-$pdf->SetFont('thsarabunit', '', $font_size_mm); // ใช้ฟอนต์ Sarabun
+$pdf->SetFont('thsarabunit', '', 16); // ใช้ฟอนต์ Sarabun
 
-// เริ่มสร้างเนื้อหา
+$html = <<<HTML
+<strong style="font-size: 16px;">รายละเอียดคุณลักษณะของพัสดุที่จะซื้อหรือจ้าง</strong>
+<br><strong style="font-size: 16px;">ตามระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. ๒๕๖๐ ข้อ ๒๑</strong>
+<br><strong style="font-size: 16px;">งานจัดซื้อเวชภัณฑ์ยา สนับสนุนการให้บริการสาธารณะระดับปฐมภูมิ</strong>
+<br><strong style="font-size: 16px;">ของโรงพยาบาลส่งเสริมสุขภาพตำบลในสังกัดองค์การบริหารส่วนจังหวัดลำพูน</strong>
+<br><strong style="font-size: 16px;">ประจำเดือนตุลาคม ๒๕๖๗ - เดือนธันวาคม ๒๕๖๗</strong>
+HTML;
+$pdf->writeHTMLCell(0, 0, 25, '', $html, 0, 1, 0, true, 'C', true);
+
+
+
+// เพิ่มหน้าต่อไปสำหรับข้อมูลจากฐานข้อมูล
+$pdf->AddPage();
+
+// ตั้งค่าฟอนต์สำหรับข้อมูลจากฐานข้อมูล
+$pdf->SetFont('thsarabunit', '', 16);
+
+// เริ่มสร้างเนื้อหาจากฐานข้อมูล
 $html = '<br><br><br>'; // เพิ่มบรรทัดว่าง 2 บรรทัด
 $html .= '<table border="0" cellpadding="5">';
 $index = 1;  // เริ่มนับลำดับที่
@@ -80,7 +97,6 @@ foreach ($data as $row) {
     $format_item_code = htmlspecialchars($row['format_item_code']);  
     $packing_size = htmlspecialchars($row['packing_size']);  
 
-    // แถวที่ 1: ลำดับที่ + ชื่อยา (ซ้าย) และจำนวน + หน่วย (ขวา)
     // ดึงชื่อยา จากตาราง medicine_info โดยใช้ working_code
     $medicine_name_query = "SELECT itemcode FROM medicine_info WHERE working_code = :working_code";
     $medicine_name_stmt = $con->prepare($medicine_name_query);
@@ -100,7 +116,6 @@ foreach ($data as $row) {
     $html .= '</tr>';
     
     // แถวที่ 3: รูปแบบ 
-    // ดึงข้อมูลจากตาราง medicine_info โดยใช้ working_code
     $medicine_query = "SELECT format_itemcode FROM medicine_info WHERE working_code = :working_code";
     $medicine_stmt = $con->prepare($medicine_query);
     $medicine_stmt->execute([':working_code' => $row['working_code']]);
@@ -122,13 +137,11 @@ foreach ($data as $row) {
     $html .= '</tr>';
     
     // แถวที่ 6: ภาชนะบรรจุ + ข้อความเพิ่มเติม
-    // ดึงข้อมูล container1 จากตาราง medicine_info โดยใช้ working_code
     $container_query = "SELECT container1 FROM medicine_info WHERE working_code = :working_code";
     $container_stmt = $con->prepare($container_query);
     $container_stmt->execute([':working_code' => $row['working_code']]);
     $container_info = $container_stmt->fetch(PDO::FETCH_ASSOC);
 
-    // แสดงข้อมูล container1 โดยใช้ nl2br เพื่อย่อหน้า
     $container_text = htmlspecialchars($container_info['container1']);
     $container_text = str_replace("\n", "<br>", $container_text);
     $html .= '<tr>';

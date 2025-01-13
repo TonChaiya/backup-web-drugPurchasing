@@ -1,4 +1,5 @@
 <?php
+ob_start(); // เริ่มเก็บข้อมูลใน buffer
 session_start();
 include('../config.php');
 include_once '../admin/nav.php'; // เพิ่มส่วนของเมนูนำทาง
@@ -9,17 +10,27 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// ดึงข้อมูล status ที่ไม่ซ้ำจากตาราง po
-$query = "SELECT DISTINCT status FROM po";
-$stmt = $con->prepare($query);
-$stmt->execute();
-$statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// สร้าง CSRF Token
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
-// ดึงจำนวนรายการในตาราง processed
-$processedQuery = "SELECT COUNT(*) as count FROM processed";
-$processedStmt = $con->prepare($processedQuery);
-$processedStmt->execute();
-$processedCount = $processedStmt->fetch(PDO::FETCH_ASSOC)['count'];
+try {
+    // ดึงข้อมูล status ที่ไม่ซ้ำจากตาราง po
+    $query = "SELECT DISTINCT status FROM po";
+    $stmt = $con->prepare($query);
+    $stmt->execute();
+    $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // ดึงจำนวนรายการในตาราง processed
+    $processedQuery = "SELECT COUNT(*) as count FROM processed";
+    $processedStmt = $con->prepare($processedQuery);
+    $processedStmt->execute();
+    $processedCount = $processedStmt->fetch(PDO::FETCH_ASSOC)['count'];
+} catch (PDOException $e) {
+    die("เกิดข้อผิดพลาดในการดึงข้อมูล: " . $e->getMessage());
+}
+ob_end_flush(); // ส่งข้อมูลทั้งหมดออกไปยังเบราว์เซอร์
 ?>
 
 <!DOCTYPE html>
@@ -45,16 +56,17 @@ $processedCount = $processedStmt->fetch(PDO::FETCH_ASSOC)['count'];
 <body>
     <div class="max-w-4xl mx-auto p-6">
         <!-- ฟอร์มสำหรับการเลือกสถานะและการประมวลผล -->
-        <form action="process.php" method="post">
+        <form action="process.php" method="post" onsubmit="return validateForm()">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
             <!-- Select Status -->
             <div class="mb-6">
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Select Status</label>
-                <select id="status" name="status" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <select id="status" name="status" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
                     <option value="">All</option>
                     <?php 
                     // แสดงรายการ status ที่ดึงมาจากฐานข้อมูล
                     foreach ($statuses as $row) {
-                        echo '<option value="' . htmlspecialchars($row['status']) . '">' . htmlspecialchars($row['status']) . '</option>';
+                        echo '<option value="' . htmlspecialchars($row['status'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($row['status'], ENT_QUOTES, 'UTF-8') . '</option>';
                     }
                     ?>
                 </select>
@@ -86,6 +98,17 @@ $processedCount = $processedStmt->fetch(PDO::FETCH_ASSOC)['count'];
     </div>
 
     <script>
+        // ฟังก์ชันตรวจสอบฟอร์มก่อนส่ง
+        function validateForm() {
+            const status = document.getElementById('status').value;
+            if (!status) {
+                alert('กรุณาเลือกสถานะก่อนทำการประมวลผล');
+                return false;
+            }
+            return true;
+        }
+
+        // ฟังก์ชันแสดงตัวเลือกรูปแบบรายงาน
         function showReportOptions(status) {
             Swal.fire({
                 title: 'Select Report Format',
@@ -103,6 +126,7 @@ $processedCount = $processedStmt->fetch(PDO::FETCH_ASSOC)['count'];
             });
         }
 
+        // ฟังก์ชันสร้างรายงาน
         function generateReport(format, status) {
             Swal.fire({
                 title: 'Are you sure?',

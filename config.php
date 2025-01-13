@@ -1,9 +1,9 @@
 <?php
 // ใช้ environment variables ในการเก็บค่าที่สำคัญ
-$host = getenv('DB_HOST') ?: 'sql310.infinityfree.com';
-$dbname = getenv('DB_NAME') ?: 'if0_38078473_Webtest';
-$username = getenv('DB_USER') ?: 'if0_38078473';
-$password = getenv('DB_PASS') ?: 'Tonton1928nim';
+$host = getenv('DB_HOST') ?: 'localhost';
+$dbname = getenv('DB_NAME') ?: 'user';
+$username = getenv('DB_USER') ?: 'root';
+$password = getenv('DB_PASS') ?: '';
 
 try {
     // สร้างการเชื่อมต่อ PDO

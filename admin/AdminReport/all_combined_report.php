@@ -56,6 +56,46 @@ try {
 </head>
 
 <body>
+
+ <!-- ความคืบหน้าการโหลด -->
+ <div id="loader" class="fixed inset-0 bg-gray-500 bg-opacity-50 z-50 flex justify-center items-center">
+    <div class="w-1/3 p-4 bg-white rounded-lg shadow-lg">
+        <div class="text-center">
+            <div class="text-gray-700 font-bold text-xl mb-4">กำลังโหลดข้อมูล...</div>
+            <div class="relative pt-1">
+                <div class="flex mb-2 items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-teal-600 bg-teal-200">
+                            ความคืบหน้า
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-teal-600 bg-teal-200">
+                            0%
+                        </span>
+                    </div>
+                </div>
+                <div class="flex mb-2 items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-teal-600 bg-teal-200">
+                            การโหลดข้อมูล
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-teal-600 bg-teal-200">
+                            100%
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                <div id="progressBar" class="bg-teal-600 h-2.5 rounded-full w-0"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
     <div class="container mx-auto mt-8 px-4">
         <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">รายงานการเบิกทั้งหมด (รวมรายการ)</h2>
 
@@ -102,6 +142,60 @@ try {
             <p class="text-gray-500 mt-4 text-center">ไม่พบข้อมูลการเบิกที่ตรงกับเงื่อนไข</p>
         <?php endif; ?>
     </div>
+
+    
+<!-- ปุ่ม "ขึ้นสุด" -->
+<button id="scrollToTopBtn" class="fixed bottom-20 right-4 bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-400 focus:outline-none z-10">
+    ขึ้นสุด
+</button>
+
+<!-- ปุ่ม "ลงสุด" -->
+<button id="scrollToBottomBtn" class="fixed bottom-4 right-4 bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-400 focus:outline-none z-10">
+    ลงสุด
+</button>
+
+<script>
+    // ฟังก์ชันเลื่อนหน้าจอไปบนสุด
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    // ฟังก์ชันเลื่อนหน้าจอไปล่างสุด
+    function scrollToBottom() {
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+
+    // ตั้งค่า event ให้กับปุ่ม
+    document.getElementById('scrollToTopBtn').addEventListener('click', scrollToTop);
+    document.getElementById('scrollToBottomBtn').addEventListener('click', scrollToBottom);
+</script>
+
+<script>
+    // ฟังก์ชันแสดงความคืบหน้า
+    window.onload = function() {
+        var progressBar = document.getElementById('progressBar');
+        var loader = document.getElementById('loader');
+
+        // จำลองการโหลดข้อมูล
+        var progress = 0;
+        var interval = setInterval(function() {
+            progress += 10;
+            progressBar.style.width = progress + '%';
+            document.querySelector('#loader .text-right span').innerText = progress + '%';
+            if (progress >= 100) {
+                clearInterval(interval);
+                loader.style.display = 'none'; // ซ่อน loader เมื่อเสร็จสิ้น
+            }
+        }, 300);
+    };
+</script>
+
 </body>
 
 </html>
