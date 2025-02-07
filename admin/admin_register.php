@@ -2,6 +2,15 @@
 session_start();
 include('../config.php');
 
+// ดึงข้อมูลผู้ใช้งานจากฐานข้อมูล
+try {
+    $stmt = $con->prepare("SELECT * FROM users");
+    $stmt->execute();
+    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    die("เกิดข้อผิดพลาด: " . $e->getMessage());
+}
+
 $alertMessage = ''; // ตัวแปรเก็บข้อความแจ้งเตือน
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -62,80 +71,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
-<body>
+<body class="bg-gray-100">
+    <?php include('nav.php'); ?>
 
-<?php include('nav.php'); ?>
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <div class="w-1/4 bg-gray-800 text-white p-4">
+            <h2 class="text-lg font-bold mb-4">รายชื่อผู้ใช้งาน</h2>
+            <ul>
+                <?php foreach ($users as $user): ?>
+                    <li class="mb-2">
+                        <span class="block py-2 px-4 bg-gray-700 rounded"><?php echo htmlspecialchars($user['hospital_name']); ?> (<?php echo htmlspecialchars($user['username_account']); ?>)</span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
 
-  <div class="flex justify-center items-center min-h-screen">
-    <form method="POST" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center" onsubmit="clearForm(this)">
-      <h2 class="text-2xl font-bold mb-4 text-center text-gray-800">Register</h2>
-      <input type="text" name="username" placeholder="Username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <input type="password" name="confirm_password" placeholder="Confirm Password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <input type="text" name="hospital_code" placeholder="รหัสสถานพยาบาล" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <input type="text" name="hospital_name" placeholder="ชื่อ รพ.สต" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <input type="text" name="responsible_person" placeholder="ผู้รับผิดชอบ" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <input type="text" name="contact_number" placeholder="เบอร์ติดต่อที่ติดต่อได้" pattern="\d{10}" title="กรุณากรอกเบอร์โทรศัพท์ 10 หลัก (เช่น 0812345678)" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <input type="text" name="hospital_contact_number" placeholder="เบอร์ติดต่อสถานพยาบาล" pattern="\d{9}" title="กรุณากรอกเบอร์โทรศัพท์สำนักงาน (เช่น 053-xxx-xxx)" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <button type="submit" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">Register</button>
-    </form>
-  </div>
-  <?php if ($alertMessage): ?>
-    <script>
-        Swal.fire({
-            title: "แจ้งเตือน",
-            text: "<?php echo $alertMessage; ?>",
-            icon: "<?php echo $alertMessage === 'บันทึกข้อมูลสำเร็จ!' ? 'success' : 'error'; ?>",
-            confirmButtonText: "ตกลง"
-        }).then(() => {
-            <?php if ($alertMessage === 'บันทึกข้อมูลสำเร็จ!'): ?>
-                window.location.href = "../admin/admin_register.php";
-            <?php endif; ?>
-        });
-    </script>
+        <!-- Main Content -->
+        <div class="flex-1 flex justify-center items-center">
+            <form method="POST" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center" onsubmit="clearForm(this)">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Register</h2>
+                <input type="text" name="username" placeholder="Username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="password" name="confirm_password" placeholder="Confirm Password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="text" name="hospital_code" placeholder="รหัสสถานพยาบาล" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="text" name="hospital_name" placeholder="ชื่อ รพ.สต" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="text" name="responsible_person" placeholder="ผู้รับผิดชอบ" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="text" name="contact_number" placeholder="เบอร์ติดต่อ" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="text" name="hospital_contact_number" placeholder="เบอร์ติดต่อสถานพยาบาล" required class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <button type="submit" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <?php if ($alertMessage): ?>
+        <script>
+            Swal.fire({
+                title: "แจ้งเตือน",
+                text: "<?php echo $alertMessage; ?>",
+                icon: "<?php echo $alertMessage === 'บันทึกข้อมูลสำเร็จ!' ? 'success' : 'error'; ?>",
+                confirmButtonText: "ตกลง"
+            }).then(() => {
+                <?php if ($alertMessage === 'บันทึกข้อมูลสำเร็จ!'): ?>
+                    window.location.href = "../admin/admin_register.php";
+                <?php endif; ?>
+            });
+        </script>
     <?php endif; ?>
-  <script>
-    function clearForm(form) {
-      // รีเซ็ตฟอร์มหลังจากการส่งข้อมูลสำเร็จ
-      setTimeout(function() {
-        form.reset();
-      }, 50); // ให้เวลาเซิร์ฟเวอร์ในการประมวลผลก่อนเคลียร์ฟอร์ม
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-      const form = document.querySelector('form');
-      const passwordInput = document.querySelector('input[name="password"]');
-      const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
-
-      form.addEventListener('submit', function(event) {
-        if (passwordInput.value !== confirmPasswordInput.value) {
-          event.preventDefault(); // ป้องกันการส่งฟอร์ม
-          alert('รหัสผ่านไม่ตรงกัน กรุณาลองใหม่');
-        }
-      });
-    });
-  </script>
-
-
-  <!-- Script to toggle dropdown menu ซ่อนเมื่อไม่ได้กด -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const profileButton = document.getElementById('user-menu-button');
-      const dropdownMenu = document.getElementById('dropdown-menu');
-
-      profileButton.addEventListener('click', function(event) {
-        event.preventDefault();
-        dropdownMenu.classList.toggle('hidden');
-      });
-
-      document.addEventListener('click', function(event) {
-        if (!profileButton.contains(event.target) && !dropdownMenu.contains(event.target)) {
-          dropdownMenu.classList.add('hidden');
-        }
-      });
-    });
-  </script>
-
 </body>
 
 </html>

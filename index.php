@@ -71,9 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
             เข้าสู่ระบบ
         </button>
-        <p class="mt-4 text-sm text-gray-600 text-center">
+        <!-- <p class="mt-4 text-sm text-gray-600 text-center">
             หากคุณไม่มีบัญชี <a href="register.php" class="text-blue-500 hover:underline">ลงทะเบียน</a>
-        </p>
+        </p> -->
     </form>
 </body>
 
