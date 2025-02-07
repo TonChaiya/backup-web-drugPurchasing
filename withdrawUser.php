@@ -70,7 +70,7 @@ $currentDate = date('d/m/') . (date('Y') + 543);
         <div class="hidden sm:flex sm:ml-6">
           <a href="dashboard.php" class="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white">Dashboard</a>
           <a href="page-report.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">รายงาน</a>
-          <a href="dashboard-copy.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">เบิกยา</a>
+          <a href="withdrawUser.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">เบิกยา</a>
           <a href="register.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">register</a>
         </div>
       </div>
@@ -101,7 +101,7 @@ $currentDate = date('d/m/') . (date('Y') + 543);
     <div class="space-y-1 px-2 pb-3 pt-2">
       <a href="dashboard.php" class="block rounded-md bg-gray-900 px-3 py-2 text-base font-medium text-white">Dashboard</a>
       <a href="page-report.php" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">รายงาน</a>
-      <a href="dashboard-copy.php" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">เบิกยา</a>
+      <a href="withdrawUser.php" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">เบิกยา</a>
       <a href="register.php" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">register</a>
     </div>
   </div>
