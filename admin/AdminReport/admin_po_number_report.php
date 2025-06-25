@@ -15,16 +15,28 @@ if (!isset($_GET['po_number'])) {
 }
 
 $po_number = $_GET['po_number'];
+$selectedStatus = $_GET['status'] ?? 'อนุมัติ';
 
 try {
-    // ดึงข้อมูลตามเลขที่ใบเบิกที่กำหนด
-    $stmt = $con->prepare("
-        SELECT po_number, date, dept_id, working_code, item_code, format_item_code, 
-               quantity, price, remarks, packing_size, total_value
-        FROM po 
-        WHERE po_number = :po_number AND status = 'อนุมัติ'
-    ");
-    $stmt->bindParam(':po_number', $po_number);
+    // สร้าง SQL query ตามสถานะที่เลือก
+    if ($selectedStatus === 'all') {
+        $stmt = $con->prepare("
+            SELECT po_number, date, dept_id, working_code, item_code, format_item_code,
+                   quantity, price, remarks, packing_size, total_value, status
+            FROM po
+            WHERE po_number = :po_number
+        ");
+        $stmt->bindParam(':po_number', $po_number);
+    } else {
+        $stmt = $con->prepare("
+            SELECT po_number, date, dept_id, working_code, item_code, format_item_code,
+                   quantity, price, remarks, packing_size, total_value, status
+            FROM po
+            WHERE po_number = :po_number AND status = :status
+        ");
+        $stmt->bindParam(':po_number', $po_number);
+        $stmt->bindParam(':status', $selectedStatus);
+    }
     $stmt->execute();
     $po_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -48,7 +60,7 @@ try {
 </head>
 
 <body class="bg-gray-100">
-    
+
  <!-- ความคืบหน้าการโหลด -->
 <div id="loader" class="fixed inset-0 bg-gray-500 bg-opacity-50 z-50 flex justify-center items-center">
     <div class="w-1/3 p-4 bg-white rounded-lg shadow-lg">
@@ -90,6 +102,11 @@ try {
     <div class="container mx-auto mt-10 px-4">
         <h1 class="text-3xl font-bold text-center text-gray-700 mb-6">
             รายงานตามเลขที่ใบเบิก: <?php echo htmlspecialchars($po_number); ?>
+            <?php if ($selectedStatus !== 'all'): ?>
+                <br><span class="text-lg text-gray-600">สถานะ: <?php echo htmlspecialchars($selectedStatus); ?></span>
+            <?php else: ?>
+                <br><span class="text-lg text-gray-600">ทุกสถานะ</span>
+            <?php endif; ?>
         </h1>
 
         <?php if ($po_records): ?>
@@ -98,7 +115,7 @@ try {
                     <thead class="bg-gray-200">
                         <tr>
                             <?php
-                            $headers = ['เลขที่ใบเบิก', 'วันที่', 'หน่วยเบิก', 'รหัสงาน', 'รหัสสินค้า', 'รูปแบบสินค้า', 'จำนวน', 'ราคา', 'หมายเหตุ', 'ขนาดบรรจุ', 'มูลค่ารวม'];
+                            $headers = ['เลขที่ใบเบิก', 'วันที่', 'หน่วยเบิก', 'รหัสงาน', 'รหัสสินค้า', 'รูปแบบสินค้า', 'จำนวน', 'ราคา', 'หมายเหตุ', 'ขนาดบรรจุ', 'มูลค่ารวม', 'สถานะ'];
                             foreach ($headers as $header) {
                                 echo "<th class='py-3 px-4 text-gray-700 border-b font-semibold text-sm'>{$header}</th>";
                             }
@@ -119,16 +136,29 @@ try {
                                 <td class="py-3 px-4 border-b"><?php echo htmlspecialchars($record['remarks']); ?></td>
                                 <td class="py-3 px-4 border-b"><?php echo htmlspecialchars($record['packing_size']); ?></td>
                                 <td class="py-3 px-4 border-b text-right"><?php echo number_format($record['total_value'], 2); ?></td>
+                                <td class="py-3 px-4 border-b text-center">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium
+                                        <?php
+                                        switch($record['status']) {
+                                            case 'อนุมัติ': echo 'bg-green-100 text-green-800'; break;
+                                            case 'รออนุมัติ': echo 'bg-yellow-100 text-yellow-800'; break;
+                                            case 'ยกเลิกใบเบิก': echo 'bg-red-100 text-red-800'; break;
+                                            default: echo 'bg-gray-100 text-gray-800';
+                                        }
+                                        ?>">
+                                        <?php echo htmlspecialchars($record['status']); ?>
+                                    </span>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                     <tfoot class="bg-gray-200">
                         <tr>
-                            <td colspan="9" class="py-3 px-4 text-gray-700 font-semibold">จำนวนรายการทั้งหมด</td>
+                            <td colspan="10" class="py-3 px-4 text-gray-700 font-semibold">จำนวนรายการทั้งหมด</td>
                             <td colspan="2" class="py-3 px-4 text-right text-gray-700 font-semibold"><?php echo $total_items; ?></td>
                         </tr>
                         <tr>
-                            <td colspan="9" class="py-3 px-4 text-gray-700 font-semibold">มูลค่ารวมทั้งหมด</td>
+                            <td colspan="10" class="py-3 px-4 text-gray-700 font-semibold">มูลค่ารวมทั้งหมด</td>
                             <td colspan="2" class="py-3 px-4 text-right text-gray-700 font-semibold"><?php echo number_format($grand_total, 2); ?> บาท</td>
                         </tr>
                     </tfoot>
@@ -141,7 +171,7 @@ try {
         <?php endif; ?>
     </div>
 
-    
+
 <!-- ปุ่ม "ขึ้นสุด" -->
 <button id="scrollToTopBtn" class="fixed bottom-20 right-4 bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-400 focus:outline-none z-10">
     ขึ้นสุด

@@ -9,21 +9,43 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 }
 
 try {
-    // ดึงข้อมูลพร้อมคำนวณมูลค่ารวมแต่ละรายการ (quantity * price)
-    $stmt = $con->prepare("
-        SELECT 
-            working_code, 
-            MAX(item_code) AS item_code, 
-            MAX(format_item_code) AS format_item_code, 
-            SUM(CASE WHEN quantity >= 0 THEN quantity ELSE 0 END) AS total_quantity, 
-            AVG(CASE WHEN price > 0 THEN price ELSE NULL END) AS average_price, 
-            SUM(CASE WHEN quantity >= 0 AND price > 0 THEN quantity * price ELSE 0 END) AS total_value
-        FROM po 
-        WHERE status = 'อนุมัติ'
-        GROUP BY working_code
-        ORDER BY working_code ASC
-    ");
-    $stmt->execute();
+    // รับค่าสถานะจาก URL
+    $selectedStatus = $_GET['status'] ?? 'อนุมัติ';
+
+    // สร้าง SQL query ตามสถานะที่เลือก
+    if ($selectedStatus === 'all') {
+        $stmt = $con->prepare("
+            SELECT
+                working_code,
+                MAX(item_code) AS item_code,
+                MAX(format_item_code) AS format_item_code,
+                SUM(CASE WHEN quantity >= 0 THEN quantity ELSE 0 END) AS total_quantity,
+                AVG(CASE WHEN price > 0 THEN price ELSE NULL END) AS average_price,
+                SUM(CASE WHEN quantity >= 0 AND price > 0 THEN quantity * price ELSE 0 END) AS total_value,
+                GROUP_CONCAT(DISTINCT status) AS statuses
+            FROM po
+            GROUP BY working_code
+            ORDER BY working_code ASC
+        ");
+        $stmt->execute();
+    } else {
+        $stmt = $con->prepare("
+            SELECT
+                working_code,
+                MAX(item_code) AS item_code,
+                MAX(format_item_code) AS format_item_code,
+                SUM(CASE WHEN quantity >= 0 THEN quantity ELSE 0 END) AS total_quantity,
+                AVG(CASE WHEN price > 0 THEN price ELSE NULL END) AS average_price,
+                SUM(CASE WHEN quantity >= 0 AND price > 0 THEN quantity * price ELSE 0 END) AS total_value,
+                MAX(status) AS statuses
+            FROM po
+            WHERE status = :status
+            GROUP BY working_code
+            ORDER BY working_code ASC
+        ");
+        $stmt->bindParam(':status', $selectedStatus);
+        $stmt->execute();
+    }
     $combined_purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ตรวจสอบข้อมูลก่อนคำนวณ
@@ -97,7 +119,14 @@ try {
 
 
     <div class="container mx-auto mt-8 px-4">
-        <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">รายงานการเบิกทั้งหมด (รวมรายการ)</h2>
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">
+            รายงานการเบิกทั้งหมด (รวมรายการ)
+            <?php if ($selectedStatus !== 'all'): ?>
+                - สถานะ: <?php echo htmlspecialchars($selectedStatus); ?>
+            <?php else: ?>
+                - ทุกสถานะ
+            <?php endif; ?>
+        </h2>
 
         <?php if ($combined_purchases): ?>
             <table class="min-w-full bg-white border border-gray-300 text-sm">
@@ -110,10 +139,11 @@ try {
                         <th class="py-2 px-4 border-b text-right">จำนวนรวม</th>
                         <th class="py-2 px-4 border-b text-right">ราคาเฉลี่ย</th>
                         <th class="py-2 px-4 border-b text-right">มูลค่ารวม</th>
+                        <th class="py-2 px-4 border-b text-center">สถานะ</th>
                     </tr>
                 </thead>
                 <tbody class="text-gray-700">
-                    <?php 
+                    <?php
                     $index = 1; // เริ่มลำดับจาก 1
                     foreach ($combined_purchases as $purchase): ?>
                         <tr class="hover:bg-gray-100">
@@ -124,16 +154,35 @@ try {
                             <td class="py-2 px-4 border-b text-right"><?php echo number_format($purchase['total_quantity']); ?></td>
                             <td class="py-2 px-4 border-b text-right"><?php echo number_format($purchase['average_price'], 2); ?></td>
                             <td class="py-2 px-4 border-b text-right"><?php echo number_format($purchase['total_value'], 2); ?></td>
+                            <td class="py-2 px-4 border-b text-center">
+                                <?php
+                                $statuses = explode(',', $purchase['statuses']);
+                                foreach ($statuses as $status):
+                                    $status = trim($status);
+                                ?>
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium mr-1
+                                        <?php
+                                        switch($status) {
+                                            case 'อนุมัติ': echo 'bg-green-100 text-green-800'; break;
+                                            case 'รออนุมัติ': echo 'bg-yellow-100 text-yellow-800'; break;
+                                            case 'ยกเลิกใบเบิก': echo 'bg-red-100 text-red-800'; break;
+                                            default: echo 'bg-gray-100 text-gray-800';
+                                        }
+                                        ?>">
+                                        <?php echo htmlspecialchars($status); ?>
+                                    </span>
+                                <?php endforeach; ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
                 <tfoot>
                     <tr class="bg-gray-200">
-                        <td colspan="5" class="py-2 px-4 border-t text-right font-semibold">จำนวนรายการทั้งหมด:</td>
+                        <td colspan="6" class="py-2 px-4 border-t text-right font-semibold">จำนวนรายการทั้งหมด:</td>
                         <td colspan="2" class="py-2 px-4 border-t text-right font-semibold"><?php echo number_format($total_items); ?></td>
                     </tr>
                     <tr class="bg-gray-200">
-                        <td colspan="5" class="py-2 px-4 border-t text-right font-semibold">มูลค่ารวมทั้งหมด:</td>
+                        <td colspan="6" class="py-2 px-4 border-t text-right font-semibold">มูลค่ารวมทั้งหมด:</td>
                         <td colspan="2" class="py-2 px-4 border-t text-right font-semibold"><?php echo number_format($grand_total, 2); ?> บาท</td>
                     </tr>
                 </tfoot>
@@ -143,7 +192,7 @@ try {
         <?php endif; ?>
     </div>
 
-    
+
 <!-- ปุ่ม "ขึ้นสุด" -->
 <button id="scrollToTopBtn" class="fixed bottom-20 right-4 bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-400 focus:outline-none z-10">
     ขึ้นสุด

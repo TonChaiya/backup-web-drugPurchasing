@@ -1,7 +1,7 @@
 <?php
 // ใช้ environment variables ในการเก็บค่าที่สำคัญ
 $host = getenv('DB_HOST') ?: 'localhost';
-$dbname = getenv('DB_NAME') ?: 'user';
+$dbname = getenv('DB_NAME') ?: '4527701_drugsore';
 $username = getenv('DB_USER') ?: 'root';
 $password = getenv('DB_PASS') ?: '';
 

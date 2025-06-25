@@ -21,32 +21,37 @@ if (isset($_POST['save'])) {
                     packing_size, 
                     status 
                   FROM po";
-        if ($status && $status !== 'All') {
+        if ($status && $status !== 'All' && $status !== '') {
             $query .= " WHERE status = :status";
         }
         $query .= " GROUP BY working_code, item_code, format_item_code, price, remarks, packing_size, status";
         $query .= " ORDER BY working_code";
         $stmt = $con->prepare($query);
-        if ($status && $status !== 'All') {
+        if ($status && $status !== 'All' && $status !== '') {
             $stmt->bindParam(':status', $status);
         }
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // ตรวจสอบข้อมูลที่มีอยู่ก่อนการบันทึก
-        $checkQuery = "SELECT purchase_status FROM processed WHERE working_code = :working_code AND item_code = :item_code AND format_item_code = :format_item_code";
+        // ตรวจสอบข้อมูลที่มีอยู่ก่อนการบันทึก (เพิ่ม status ในการตรวจสอบ)
+        $checkQuery = "SELECT purchase_status FROM processed WHERE working_code = :working_code AND item_code = :item_code AND format_item_code = :format_item_code AND status = :status";
         $checkStmt = $con->prepare($checkQuery);
 
         foreach ($data as $row) {
+            // ใช้สถานะจริงจากตาราง po โดยไม่บังคับเปลี่ยน
+            $statusValue = $row['status'];
+
             $checkStmt->execute([
                 ':working_code' => $row['working_code'],
                 ':item_code' => $row['item_code'],
-                ':format_item_code' => $row['format_item_code']
+                ':format_item_code' => $row['format_item_code'],
+                ':status' => $statusValue
             ]);
             $existingRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existingRow) {
                 $row['purchase_status'] = $existingRow['purchase_status'];
+                $row['status'] = $statusValue; // เก็บสถานะไว้แสดงใน duplicates
                 $duplicateEntries[] = $row;
             }
         }
@@ -54,13 +59,66 @@ if (isset($_POST['save'])) {
         if (count($duplicateEntries) > 0) {
             session_start();
             $_SESSION['duplicate_entries'] = $duplicateEntries;
+
+            // บันทึกเฉพาะข้อมูลที่ไม่ซ้ำ
+            $nonDuplicateData = [];
+            foreach ($data as $row) {
+                $statusValue = $row['status'];
+                $isDuplicate = false;
+
+                // ตรวจสอบว่ารายการนี้อยู่ใน duplicateEntries หรือไม่
+                foreach ($duplicateEntries as $duplicate) {
+                    if ($duplicate['working_code'] === $row['working_code'] &&
+                        $duplicate['item_code'] === $row['item_code'] &&
+                        $duplicate['format_item_code'] === $row['format_item_code'] &&
+                        $duplicate['status'] === $statusValue) {
+                        $isDuplicate = true;
+                        break;
+                    }
+                }
+
+                if (!$isDuplicate) {
+                    $nonDuplicateData[] = $row;
+                }
+            }
+
+            // บันทึกข้อมูลที่ไม่ซ้ำ
+            if (count($nonDuplicateData) > 0) {
+                $insertQuery = "INSERT INTO processed
+                                (working_code, item_code, format_item_code, total_quantity, price, remarks, packing_size, total_value, status, purchase_status)
+                                VALUES
+                                (:working_code, :item_code, :format_item_code, :total_quantity, :price, :remarks, :packing_size, :total_value, :status, :purchase_status)";
+                $insertStmt = $con->prepare($insertQuery);
+
+                foreach ($nonDuplicateData as $row) {
+                    $statusValue = $row['status'];
+                    $purchaseStatus = isset($_POST['purchase_status'][$row['working_code']]) ? $_POST['purchase_status'][$row['working_code']] : 'GPO';
+
+                    $insertStmt->execute([
+                        ':working_code' => $row['working_code'],
+                        ':item_code' => $row['item_code'],
+                        ':format_item_code' => $row['format_item_code'],
+                        ':total_quantity' => $row['total_quantity'],
+                        ':price' => $row['price'],
+                        ':remarks' => $row['remarks'],
+                        ':packing_size' => $row['packing_size'],
+                        ':total_value' => $row['total_value'],
+                        ':status' => $statusValue,
+                        ':purchase_status' => $purchaseStatus
+                    ]);
+                }
+            }
+
+            $duplicateCount = count($duplicateEntries);
+            $savedCount = count($nonDuplicateData);
+
             $notification = 'Swal.fire({
                 title: "Warning",
-                text: "Some data already exists and was not saved.",
+                html: "พบข้อมูลซ้ำ ' . $duplicateCount . ' รายการ<br>บันทึกข้อมูลใหม่ ' . $savedCount . ' รายการเรียบร้อย",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "OK",
-                cancelButtonText: "Show Duplicates"
+                cancelButtonText: "ดูรายการซ้ำ"
             }).then((result) => {
                 if (result.dismiss === Swal.DismissReason.cancel) {
                     window.open("duplicates.php", "_blank");
@@ -75,7 +133,8 @@ if (isset($_POST['save'])) {
             $insertStmt = $con->prepare($insertQuery);
 
             foreach ($data as $row) {
-                $statusValue = in_array($row['status'], ['อนุมัติ', 'รออนุมัติ', 'ยกเลิกใบเบิก', 'Completed']) ? $row['status'] : 'รออนุมัติ';
+                // ใช้สถานะจริงจากตาราง po โดยไม่บังคับเปลี่ยน
+                $statusValue = $row['status'];
                 $purchaseStatus = isset($_POST['purchase_status'][$row['working_code']]) ? $_POST['purchase_status'][$row['working_code']] : 'GPO';
 
                 $insertStmt->execute([
@@ -92,7 +151,11 @@ if (isset($_POST['save'])) {
                 ]);
             }
 
-            $notification = 'Swal.fire("Success", "Data saved successfully!", "success");';
+            $notification = 'Swal.fire({
+                title: "Success",
+                text: "บันทึกข้อมูลทั้งหมดเรียบร้อยแล้ว!",
+                icon: "success"
+            });';
         }
     } catch (PDOException $e) {
         $notification = 'Swal.fire("Error", "Error: ' . $e->getMessage() . '", "error");';
@@ -138,14 +201,14 @@ if (isset($_POST['save'])) {
                         packing_size, 
                         status 
                       FROM po";
-            if ($status && $status !== 'All') {
+            if ($status && $status !== 'All' && $status !== '') {
                 $query .= " WHERE status = :status";
             }
             $query .= " GROUP BY working_code, item_code, format_item_code, price, remarks, packing_size, status";
             $query .= " ORDER BY working_code";
 
             $stmt = $con->prepare($query);
-            if ($status && $status !== 'All') {
+            if ($status && $status !== 'All' && $status !== '') {
                 $stmt->bindParam(':status', $status);
             }
 
@@ -160,6 +223,7 @@ if (isset($_POST['save'])) {
                 echo '<tr>';
                 echo '<th class="py-1 px-2 border-b">ลำดับ</th>';
                 echo '<th class="py-1 px-2 border-b">Working Code</th>';
+                echo '<th class="py-1 px-2 border-b">Purchase Status</th>';
                 echo '<th class="py-1 px-2 border-b">Item Code</th>';
                 echo '<th class="py-1 px-2 border-b">Format Item Code</th>';
                 echo '<th class="py-1 px-2 border-b">Total Quantity</th>';
@@ -168,7 +232,6 @@ if (isset($_POST['save'])) {
                 echo '<th class="py-1 px-2 border-b">Packing Size</th>';
                 echo '<th class="py-1 px-2 border-b">Total Value</th>';
                 echo '<th class="py-1 px-2 border-b">Status</th>';
-                echo '<th class="py-1 px-2 border-b">Purchase Status</th>';
                 echo '</tr>';
                 echo '</thead>';
                 echo '<tbody>';
@@ -180,6 +243,12 @@ if (isset($_POST['save'])) {
                     echo '<tr class="' . $rowClass . '">';
                     echo '<td class="py-1 px-2 border-b">' . $index++ . '</td>';
                     echo '<td class="py-1 px-2 border-b">' . htmlspecialchars($row['working_code']) . '</td>';
+                    echo '<td class="py-1 px-2 border-b">';
+                    echo '<select name="purchase_status[' . htmlspecialchars($row['working_code']) . ']" class="mt-1 block w-full py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-xs" onchange="updateBackgroundColor(this)">';
+                    echo '<option value="จัดซื้อบริษัท">จัดซื้อบริษัท</option>';
+                    echo '<option value="GPO">GPO</option>';
+                    echo '</select>';
+                    echo '</td>';
                     echo '<td class="py-1 px-2 border-b">' . htmlspecialchars($row['item_code']) . '</td>';
                     echo '<td class="py-1 px-2 border-b">' . htmlspecialchars($row['format_item_code']) . '</td>';
                     echo '<td class="py-1 px-2 border-b">' . number_format($row['total_quantity']) . '</td>';
@@ -188,12 +257,6 @@ if (isset($_POST['save'])) {
                     echo '<td class="py-1 px-2 border-b">' . htmlspecialchars($row['packing_size']) . '</td>';
                     echo '<td class="py-1 px-2 border-b">' . number_format($row['total_value'], 2) . '</td>';
                     echo '<td class="py-1 px-2 border-b">' . htmlspecialchars($row['status']) . '</td>';
-                    echo '<td class="py-1 px-2 border-b">';
-                    echo '<select name="purchase_status[' . htmlspecialchars($row['working_code']) . ']" class="mt-1 block w-full py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-xs" onchange="updateBackgroundColor(this)">';
-                    echo '<option value="จัดซื้อบริษัท">จัดซื้อบริษัท</option>';
-                    echo '<option value="GPO">GPO</option>';
-                    echo '</select>';
-                    echo '</td>';
                     echo '</tr>';
                 }
 

@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 include('../../config.php'); // ตั้งค่าฐาน
@@ -10,14 +9,27 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 }
 
 try {
-    // ดึงข้อมูลเฉพาะที่สถานะเป็น "อนุมัติ" จากทุกหน่วยงาน
-    $stmt = $con->prepare("
-        SELECT po_number, date, dept_id, working_code, item_code, format_item_code, 
-               quantity, price, remarks, packing_size
-        FROM po 
-        WHERE status = 'อนุมัติ'
-        ORDER BY date DESC
-    ");
+    // รับค่าสถานะและหน่วยเบิกจาก URL
+    $selectedStatus = $_GET['status'] ?? 'อนุมัติ';
+    $selectedDept = $_GET['dept_id'] ?? 'all';
+
+    // สร้าง SQL query ตามสถานะและหน่วยเบิกที่เลือก
+    $where = [];
+    $params = [];
+    if ($selectedStatus !== 'all') {
+        $where[] = 'status = :status';
+        $params[':status'] = $selectedStatus;
+    }
+    if ($selectedDept !== 'all') {
+        $where[] = 'dept_id = :dept_id';
+        $params[':dept_id'] = $selectedDept;
+    }
+    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+    $sql = "SELECT po_number, date, dept_id, working_code, item_code, format_item_code, quantity, price, remarks, packing_size, status FROM po $whereSql ORDER BY date DESC";
+    $stmt = $con->prepare($sql);
+    foreach ($params as $k => $v) {
+        $stmt->bindValue($k, $v);
+    }
     $stmt->execute();
     $purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -89,8 +101,18 @@ try {
 
 
 <div class="container mx-auto mt-8 px-4">
-    <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">รายงานจัดซื้อทั้งหมด</h2>
-    
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">
+        รายงานจัดซื้อทั้งหมด (แยกรายการ)
+        <?php if ($selectedStatus !== 'all'): ?>
+            - สถานะ: <?php echo htmlspecialchars($selectedStatus); ?>
+        <?php else: ?>
+            - ทุกสถานะ
+        <?php endif; ?>
+        <?php if ($selectedDept !== 'all'): ?>
+            - หน่วยเบิก: <?php echo htmlspecialchars($selectedDept); ?>
+        <?php endif; ?>
+    </h2>
+
     <?php if ($purchases): ?>
         <div class="overflow-x-auto">
             <table class="min-w-full bg-white border border-gray-300 text-sm mx-auto">
@@ -108,6 +130,7 @@ try {
                         <th class="py-2 px-4 border-b">หมายเหตุ</th>
                         <th class="py-2 px-4 border-b">ขนาดบรรจุ</th>
                         <th class="py-2 px-4 border-b">มูลค่ารวม</th>
+                        <th class="py-2 px-4 border-b">สถานะ</th>
                     </tr>
                 </thead>
                 <tbody class="text-gray-700">
@@ -125,16 +148,29 @@ try {
                             <td class="py-2 px-4 border-b"><?php echo htmlspecialchars($purchase['remarks']); ?></td>
                             <td class="py-2 px-4 border-b"><?php echo htmlspecialchars($purchase['packing_size']); ?></td>
                             <td class="py-2 px-4 border-b"><?php echo number_format($purchase['calculated_value'], 2); ?></td>
+                            <td class="py-2 px-4 border-b">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    <?php
+                                    switch($purchase['status']) {
+                                        case 'อนุมัติ': echo 'bg-green-100 text-green-800'; break;
+                                        case 'รออนุมัติ': echo 'bg-yellow-100 text-yellow-800'; break;
+                                        case 'ยกเลิกใบเบิก': echo 'bg-red-100 text-red-800'; break;
+                                        default: echo 'bg-gray-100 text-gray-800';
+                                    }
+                                    ?>">
+                                    <?php echo htmlspecialchars($purchase['status']); ?>
+                                </span>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
                 <tfoot>
                     <tr class="bg-gray-200">
-                        <td colspan="9" class="py-2 px-4 border-t text-left text-gray-700 font-semibold">จำนวนรายการทั้งหมด:</td>
+                        <td colspan="10" class="py-2 px-4 border-t text-left text-gray-700 font-semibold">จำนวนรายการทั้งหมด:</td>
                         <td colspan="3" class="py-2 px-4 border-t text-right text-gray-700 font-semibold"><?php echo number_format($total_rows); ?></td>
                     </tr>
                     <tr class="bg-gray-200">
-                        <td colspan="9" class="py-2 px-4 border-t text-left text-gray-700 font-semibold">มูลค่ารวมทั้งหมด:</td>
+                        <td colspan="10" class="py-2 px-4 border-t text-left text-gray-700 font-semibold">มูลค่ารวมทั้งหมด:</td>
                         <td colspan="3" class="py-2 px-4 border-t text-right text-gray-700 font-semibold"><?php echo number_format($grand_total, 2); ?> บาท</td>
                     </tr>
                 </tfoot>

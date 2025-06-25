@@ -62,7 +62,7 @@ ob_end_flush(); // ส่งข้อมูลทั้งหมดออกไ�
             <div class="mb-6">
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Select Status</label>
                 <select id="status" name="status" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                    <option value="">All</option>
+                    <option value="All">All</option>
                     <?php 
                     // แสดงรายการ status ที่ดึงมาจากฐานข้อมูล
                     foreach ($statuses as $row) {
@@ -101,7 +101,7 @@ ob_end_flush(); // ส่งข้อมูลทั้งหมดออกไ�
         // ฟังก์ชันตรวจสอบฟอร์มก่อนส่ง
         function validateForm() {
             const status = document.getElementById('status').value;
-            if (!status) {
+            if (!status || status === '') {
                 alert('กรุณาเลือกสถานะก่อนทำการประมวลผล');
                 return false;
             }

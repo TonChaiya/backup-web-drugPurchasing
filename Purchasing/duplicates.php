@@ -9,11 +9,12 @@ if (!empty($duplicateEntries)) {
     include '../config.php'; // ใช้การเชื่อมต่อฐานข้อมูลจาก config.php
 
     foreach ($duplicateEntries as $entry) {
-        $stmt = $con->prepare("SELECT purchase_status FROM processed WHERE working_code = :working_code AND item_code = :item_code AND format_item_code = :format_item_code");
+        $stmt = $con->prepare("SELECT purchase_status FROM processed WHERE working_code = :working_code AND item_code = :item_code AND format_item_code = :format_item_code AND status = :status");
         $stmt->execute([
             ':working_code' => $entry['working_code'],
             ':item_code' => $entry['item_code'],
-            ':format_item_code' => $entry['format_item_code']
+            ':format_item_code' => $entry['format_item_code'],
+            ':status' => $entry['status']
         ]);
         $existingRow = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($existingRow) {

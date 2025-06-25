@@ -13,27 +13,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username = trim($_POST['username_account']);
         $password = trim($_POST['password']);
 
-        // ดึงข้อมูลผู้ใช้พร้อมกับ role และ dept_id
-        $stmt = $con->prepare("SELECT * FROM users WHERE username_account = :username_account");
+        // ดึงข้อมูลผู้ใช้พร้อมกับ role และ Location
+        $stmt = $con->prepare("SELECT * FROM account WHERE username_account = :username_account");
         $stmt->bindParam(':username_account', $username);
         $stmt->execute();
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username_account'] = $user['username_account'];
-            $_SESSION['hospital_name'] = $user['hospital_name']; // เก็บ hospital_name ในเซสชัน
-            $_SESSION['role'] = $user['role']; // role: admin หรือ user
+        // Debug: แสดงข้อมูลที่ดึงมา (ลบออกหลังจากแก้ไขเสร็จ)
+        // var_dump($user); exit;
 
-            // Redirect ตามบทบาท
-            if ($user['role'] === 'admin') {
-                header("Location: admin/admin.dashboard.php");
-            } else {
-                header("Location: dashboard.php");
+        if ($user) {
+            // ตรวจสอบรหัสผ่าน - ถ้าเป็น plain text ให้เปรียบเทียบตรงๆ ก่อน
+            $passwordMatch = false;
+
+            // ลองตรวจสอบแบบ hash ก่อน
+            if (password_verify($password, $user['password_account'])) {
+                $passwordMatch = true;
             }
-            exit;
+            // ถ้าไม่ตรง ลองเปรียบเทียบแบบ plain text
+            elseif ($password === $user['password_account']) {
+                $passwordMatch = true;
+            }
+
+            if ($passwordMatch) {
+                $_SESSION['user_id'] = $user['id_account'];
+                $_SESSION['username_account'] = $user['username_account'];
+                $_SESSION['location'] = $user['Location']; // เก็บ Location ในเซสชัน
+                $_SESSION['role'] = $user['role']; // role: admin หรือ user
+
+                // Redirect ตามบทบาท
+                if ($user['role'] === 'admin') {
+                    header("Location: admin/admin.dashboard.php");
+                } else {
+                    header("Location: dashboard.php");
+                }
+                exit;
+            } else {
+                $error = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+            }
         } else {
-            $error = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+            $error = "ไม่พบชื่อผู้ใช้นี้ในระบบ";
         }
     } else {
         $error = "คำขอไม่ถูกต้อง";
