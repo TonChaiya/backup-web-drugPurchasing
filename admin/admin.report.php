@@ -1,14 +1,16 @@
 <?php
+// ------------------ Session & Config ------------------
 session_start();
 include('../config.php');
 
-// ตรวจสอบสิทธิ์เฉพาะผู้ดูแลระบบ (Admin)
+// Only admin allowed
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../login.php");
     exit;
 }
 
-// ดึงข้อมูลสถานะที่มีในตาราง po
+// ------------------ Query Data for Dropdowns ------------------
+// Statuses from po
 try {
     $stmt = $con->prepare("SELECT DISTINCT status FROM po ORDER BY status");
     $stmt->execute();
@@ -17,8 +19,7 @@ try {
     $statuses = [];
     error_log("Error fetching statuses: " . $e->getMessage());
 }
-
-// ดึงรายชื่อหน่วยเบิก (dept_id) จาก po
+// Departments from po
 $departments = [];
 try {
     $stmt = $con->prepare("SELECT DISTINCT dept_id FROM po WHERE dept_id IS NOT NULL AND dept_id != '' ORDER BY dept_id");
@@ -28,8 +29,7 @@ try {
     $departments = [];
     error_log("Error fetching departments: " . $e->getMessage());
 }
-
-// ดึง ENUM status จากตาราง processed
+// ENUM status from processed
 $processed_statuses = [];
 try {
     $result = $con->query("SHOW COLUMNS FROM processed LIKE 'status'");
@@ -42,28 +42,25 @@ try {
     error_log("Error fetching processed statuses: " . $e->getMessage());
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เลือกประเภทของรายงาน</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-
-<body>
-
+<body class="bg-gray-100 min-h-screen">
     <?php include('nav.php'); ?>
     <div class="container mx-auto mt-10">
-        <!-- ฟอร์มประมวลผล processed และแจ้งเตือน ย้ายขึ้นบน -->
-        <form id="processForm" method="post" style="margin-bottom: 1.5rem;">
+        <!-- Process Button (separate form, always visible) -->
+        <form id="processForm" method="post" class="mb-6">
             <div class="flex justify-end">
                 <button type="submit" name="process_update" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">ประมวลผลข้อมูล processed → po_processed</button>
             </div>
         </form>
         <?php
+        // ------------------ Process Button Logic ------------------
         if (isset($_POST['process_update'])) {
             try {
                 $stmt = $con->prepare("SELECT working_code, status, purchase_status FROM processed");
@@ -85,29 +82,24 @@ try {
             }
         }
         ?>
+        <!-- Main Report Selection Card -->
         <div class="bg-white p-8 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold mb-6 text-center">เลือกประเภทของรายงาน</h2>
             <form method="POST" action="" class="main-report-form">
                 <div class="space-y-4">
-                    <!-- เลือกประเภทของรายงาน -->
                     <div>
                         <div class="flex flex-col md:flex-row md:space-x-8">
+                            <!-- Left: Main Reports -->
                             <div class="flex-1">
-                                <!-- กลุ่มรายงานฝั่งซ้าย -->
                                 <label class="block font-semibold">กรุณาเลือกประเภทของรายงาน:</label>
                                 <div class="mt-2 space-y-2">
+                                    <!-- All Items (by item) -->
                                     <div>
-                                        <input
-                                            type="radio"
-                                            id="report_all_items"
-                                            name="report_type"
-                                            value="all_items"
-                                            required>
+                                        <input type="radio" id="report_all_items" name="report_type" value="all_items" required>
                                         <label for="report_all_items" class="ml-2">รายงานการเบิกทั้งหมด (แยกรายการ)</label>
-                                        <div class="ml-6 mt-2">
-                                            <!-- ดรอปดาวน์เลือกหน่วยเบิก -->
+                                        <div class="ml-6 mt-2 flex flex-col gap-2 w-64">
                                             <label class="block text-sm text-gray-600">เลือกหน่วยเบิก:</label>
-                                            <select id="dept_all_items" name="dept_all_items" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" style="max-height: 160px; overflow-y: auto;">
+                                            <select id="dept_all_items" name="dept_all_items" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-full">
                                                 <option value="all">ทุกหน่วยเบิก</option>
                                                 <?php foreach ($departments as $dept): ?>
                                                     <option value="<?php echo htmlspecialchars($dept['dept_id']); ?>">
@@ -115,10 +107,8 @@ try {
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
-                                        </div>
-                                        <div class="mt-2">
-                                            <label class="block text-sm text-gray-600">เลือกสถานะ:</label>
-                                            <select id="status_all_items" name="status_all_items" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled style="max-height: 160px; overflow-y: auto;">
+                                            <label class="block text-sm text-gray-600 mt-2">เลือกสถานะ:</label>
+                                            <select id="status_all_items" name="status_all_items" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-full" disabled>
                                                 <option value="all">ทุกสถานะ</option>
                                                 <?php foreach ($statuses as $status): ?>
                                                     <option value="<?php echo htmlspecialchars($status['status']); ?>">
@@ -128,16 +118,13 @@ try {
                                             </select>
                                         </div>
                                     </div>
+                                    <!-- All Items (combined) -->
                                     <div>
-                                        <input
-                                            type="radio"
-                                            id="report_combined_items"
-                                            name="report_type"
-                                            value="combined_items">
+                                        <input type="radio" id="report_combined_items" name="report_type" value="combined_items">
                                         <label for="report_combined_items" class="ml-2">รายงานการเบิกทั้งหมด (รวมรายการ)</label>
                                         <div class="ml-6 mt-2">
                                             <label class="block text-sm text-gray-600">เลือกสถานะ:</label>
-                                            <select id="status_combined_items" name="status_combined_items" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled style="max-height: 160px; overflow-y: auto;">
+                                            <select id="status_combined_items" name="status_combined_items" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled>
                                                 <option value="all">ทุกสถานะ</option>
                                                 <?php foreach ($statuses as $status): ?>
                                                     <option value="<?php echo htmlspecialchars($status['status']); ?>">
@@ -147,17 +134,14 @@ try {
                                             </select>
                                         </div>
                                     </div>
+                                    <!-- By PO -->
                                     <div>
-                                        <input
-                                            type="radio"
-                                            id="report_by_po"
-                                            name="report_type"
-                                            value="by_po">
+                                        <input type="radio" id="report_by_po" name="report_type" value="by_po">
                                         <label for="report_by_po" class="ml-2">รายงานตามเลขที่ใบเบิก</label>
                                         <div class="ml-6 mt-2 space-y-2">
                                             <div>
                                                 <label class="block text-sm text-gray-600">เลือกสถานะ:</label>
-                                                <select id="status_by_po" name="status_by_po" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled style="max-height: 160px; overflow-y: auto;">
+                                                <select id="status_by_po" name="status_by_po" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled>
                                                     <option value="all">ทุกสถานะ</option>
                                                     <?php foreach ($statuses as $status): ?>
                                                         <option value="<?php echo htmlspecialchars($status['status']); ?>">
@@ -167,83 +151,40 @@ try {
                                                 </select>
                                             </div>
                                             <div>
-                                                <input
-                                                    type="text"
-                                                    id="po_number"
-                                                    name="po_number"
-                                                    class="border border-gray-300 rounded-lg px-2 py-1 w-64"
-                                                    placeholder="กรอกเลขที่ใบเบิก"
-                                                    disabled>
+                                                <input type="text" id="po_number" name="po_number" class="border border-gray-300 rounded-lg px-2 py-1 w-64" placeholder="กรอกเลขที่ใบเบิก" disabled>
                                             </div>
                                         </div>
                                     </div>
+                                    <!-- Cancelled -->
                                     <div>
-                                        <input
-                                            type="radio"
-                                            id="report_cancelled"
-                                            name="report_type"
-                                            value="cancelled">
+                                        <input type="radio" id="report_cancelled" name="report_type" value="cancelled">
                                         <label for="report_cancelled" class="ml-2">รายงานที่ยกเลิกแล้ว</label>
                                     </div>
+                                    <!-- By Date -->
                                     <div>
-                                        <input
-                                            type="radio"
-                                            id="report_by_date"
-                                            name="report_type"
-                                            value="by_date">
+                                        <input type="radio" id="report_by_date" name="report_type" value="by_date">
                                         <label for="report_by_date" class="ml-2">รายงานตามช่วงวันที่ (ที่อนุมัติแล้วเท่านั้น)</label>
                                         <div class="flex mt-2 space-x-4">
-                                            <input
-                                                type="date"
-                                                id="start_date"
-                                                name="start_date"
-                                                class="border border-gray-300 rounded-lg px-2 py-1 w-64"
-                                                placeholder="วันที่เริ่มต้น"
-                                                disabled>
-                                            <input
-                                                type="date"
-                                                id="end_date"
-                                                name="end_date"
-                                                class="border border-gray-300 rounded-lg px-2 py-1 w-64"
-                                                placeholder="วันที่สิ้นสุด"
-                                                disabled>
+                                            <input type="date" id="start_date" name="start_date" class="border border-gray-300 rounded-lg px-2 py-1 w-64" placeholder="วันที่เริ่มต้น" disabled>
+                                            <input type="date" id="end_date" name="end_date" class="border border-gray-300 rounded-lg px-2 py-1 w-64" placeholder="วันที่สิ้นสุด" disabled>
                                         </div>
                                     </div>
+                                    <!-- By Medicine -->
                                     <div class="mb-4">
-                                        <!-- Radio Button -->
                                         <div class="flex items-center space-x-2">
-                                            <input
-                                                type="radio"
-                                                id="report_by_medicine"
-                                                name="report_type"
-                                                value="by_medicine"
-                                                class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500" />
-                                            <label for="report_by_medicine" class="text-sm font-medium text-gray-700">
-                                                รายงานตามชื่อยา (ที่อนุมัติแล้วเท่านั้น)
-                                            </label>
+                                            <input type="radio" id="report_by_medicine" name="report_type" value="by_medicine" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500" />
+                                            <label for="report_by_medicine" class="text-sm font-medium text-gray-700">รายงานตามชื่อยา (ที่อนุมัติแล้วเท่านั้น)</label>
                                         </div>
-
-                                        <!-- Input สำหรับค้นหายา -->
                                         <div class="relative mt-3">
-                                            <input
-                                                type="text"
-                                                id="medicine_name"
-                                                name="medicine_name"
-                                                class="border border-gray-300 rounded-lg px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 w-64"
-                                                placeholder="กรอกชื่อยา"
-                                                oninput="searchMedicine()"
-                                                disabled />
-                                            <!-- Dropdown -->
-                                            <div
-                                                id="medicineDropdown"
-                                                class="absolute left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg hidden z-10 max-h-48 overflow-auto">
-                                            </div>
+                                            <input type="text" id="medicine_name" name="medicine_name" class="border border-gray-300 rounded-lg px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 w-64" placeholder="กรอกชื่อยา" oninput="searchMedicine()" disabled />
+                                            <div id="medicineDropdown" class="absolute left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg hidden z-10 max-h-48 overflow-auto"></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <!-- Right: Processed/po_processed Reports -->
                             <div class="flex-1 mt-8 md:mt-0">
-                                <!-- กลุ่มรายงาน processed ฝั่งขวา -->
+                                <!-- Processed -->
                                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
                                     <input type="radio" id="report_processed" name="report_type" value="processed">
                                     <label for="report_processed" class="ml-2">รายงาน หลังกดประมวลผล (จากตาราง processed ที่เเยกบริษัทเเล้วเท่านั้น)</label>
@@ -261,13 +202,13 @@ try {
                                         </div>
                                     </div>
                                 </div>
-                                <!-- กลุ่มรายงาน po_processed ฝั่งขวา (ใหม่) -->
+                                <!-- po_processed (NEW) -->
                                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                     <input type="radio" id="report_po_processed" name="report_type" value="po_processed">
                                     <label for="report_po_processed" class="ml-2">รายงานข้อมูล po_processed (กรองตามสถานะ)</label>
                                     <div class="ml-6 mt-2">
                                         <label class="block text-sm text-gray-600">เลือกสถานะ (po_processed):</label>
-                                        <select id="status_po_processed" name="status_po_processed" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled style="max-height: 160px; overflow-y: auto;">
+                                        <select id="status_po_processed" name="status_po_processed" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled>
                                             <option value="all">ทุกสถานะ</option>
                                             <option value="อนุมัติ">อนุมัติ</option>
                                             <option value="รออนุมัติ">รออนุมัติ</option>
@@ -279,7 +220,7 @@ try {
                                     </div>
                                     <div class="ml-6 mt-2">
                                         <label class="block text-sm text-gray-600">เลือก purchase_status:</label>
-                                        <select id="purchase_status_po_processed" name="purchase_status_po_processed" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled style="max-height: 160px; overflow-y: auto;">
+                                        <select id="purchase_status_po_processed" name="purchase_status_po_processed" class="mt-1 border border-gray-300 rounded-lg px-2 py-1 w-64" disabled>
                                             <option value="all">ทุกประเภท</option>
                                             <option value="GPO">GPO</option>
                                             <option value="จัดซื้อบริษัท">จัดซื้อบริษัท</option>
@@ -291,16 +232,15 @@ try {
                     </div>
                 </div>
                 <div class="text-center mt-6">
-                    <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
-                        ดูรายงาน
-                    </button>
+                    <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">ดูรายงาน</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- ------------------ JS: Toggle Inputs, Search, Redirect ------------------ -->
     <script>
-        // ฟังก์ชันจัดการการเปิด/ปิดช่องกรอกข้อมูล
+        // Toggle enable/disable inputs by report type
         function toggleInputs() {
             const reportType = document.querySelector('input[name="report_type"]:checked');
             document.getElementById('po_number').disabled = reportType?.value !== 'by_po';
@@ -310,7 +250,7 @@ try {
             document.getElementById('status_all_items').disabled = reportType?.value !== 'all_items';
             document.getElementById('status_combined_items').disabled = reportType?.value !== 'combined_items';
             document.getElementById('status_by_po').disabled = reportType?.value !== 'by_po';
-            // สำหรับ processed (checkbox group)
+            // processed (checkbox group)
             const processedGroup = document.getElementById('status_processed_group');
             if (reportType?.value === 'processed') {
                 processedGroup.style.opacity = '1';
@@ -320,34 +260,29 @@ try {
                 processedGroup.style.pointerEvents = 'none';
                 processedGroup.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
             }
-            // สำหรับ po_processed
+            // po_processed
             document.getElementById('status_po_processed').disabled = reportType?.value !== 'po_processed';
             document.getElementById('purchase_status_po_processed').disabled = reportType?.value !== 'po_processed';
-            // หากเลือกตามชื่อยา ซ่อน/แสดง dropdown
+            // medicine dropdown
             const dropdown = document.getElementById('medicineDropdown');
             if (reportType?.value !== 'by_medicine') {
                 dropdown.classList.add('hidden');
             } else {
                 dropdown.classList.remove('hidden');
             }
-            // เปิด/ปิด dropdown หน่วยเบิก
+            // dept dropdown
             document.getElementById('dept_all_items').disabled = reportType?.value !== 'all_items';
         }
-
-
-        // ฟังก์ชันค้นหารายการยาในดรอปดาวน์
+        // Search medicine dropdown
         let selectedWorkingCode = null;
-
         function searchMedicine() {
             const query = document.getElementById("medicine_name").value.trim();
             const dropdown = document.getElementById("medicineDropdown");
-
             if (query.length > 0) {
                 fetch(`../report/search_drug_list.php?query=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(data => {
                         dropdown.innerHTML = "";
-
                         if (Array.isArray(data) && data.length > 0) {
                             dropdown.classList.remove("hidden");
                             data.forEach(item => {
@@ -368,7 +303,6 @@ try {
                 dropdown.classList.add("hidden");
             }
         }
-
         function selectMedicine(workingCode, medicineName) {
             selectedWorkingCode = workingCode;
             const input = document.getElementById("medicine_name");
@@ -376,27 +310,18 @@ try {
             const dropdown = document.getElementById("medicineDropdown");
             dropdown.classList.add("hidden");
         }
-
-
-
-        // ผูกฟังก์ชัน toggleInputs กับ radio buttons
+        // Bind toggleInputs to radio buttons
         document.querySelectorAll('input[name="report_type"]').forEach(radio => {
             radio.addEventListener('change', toggleInputs);
         });
-
-        // เรียกใช้ toggleInputs เพื่อให้แน่ใจว่าสถานะเริ่มต้นถูกตั้งค่า
-        toggleInputs();
+        toggleInputs(); // initial
     </script>
-
-
     <script>
-        // เปลี่ยน selector ให้จับเฉพาะฟอร์มรายงานหลัก
+        // Main report form submit: redirect by report type
         document.querySelector('.main-report-form').addEventListener('submit', function(event) {
-            event.preventDefault(); // หยุดการส่งฟอร์มแบบปกติ
+            event.preventDefault();
             const reportType = document.querySelector('input[name="report_type"]:checked');
-
             if (reportType) {
-                // ตรวจสอบประเภทของรายงานที่เลือก
                 switch (reportType.value) {
                     case 'all_items':
                         const statusAllItems = document.getElementById('status_all_items').value;
@@ -437,10 +362,8 @@ try {
                         window.location.href = '../admin/AdminReport/admin_cancelled_report.php';
                         break;
                     case 'processed':
-                        // ดึงค่าที่เลือกทั้งหมดจาก checkbox
                         const processedCheckboxes = document.querySelectorAll('#status_processed_group input[type=checkbox]:checked');
                         let selectedStatuses = Array.from(processedCheckboxes).map(cb => cb.value);
-                        // ถ้าเลือก 'all' หรือไม่ได้เลือกเลย ให้ส่ง all
                         if (selectedStatuses.length === 0 || selectedStatuses.includes('all')) {
                             selectedStatuses = ['all'];
                         }
@@ -459,8 +382,5 @@ try {
             }
         });
     </script>
-
-
 </body>
-
 </html>
