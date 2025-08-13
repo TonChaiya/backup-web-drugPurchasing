@@ -41,6 +41,21 @@ try {
 } catch (PDOException $e) {
     error_log("Error fetching processed statuses: " . $e->getMessage());
 }
+
+// ------------------ Create/Reset po_processed Button Logic ------------------
+if (isset($_POST['create_po_processed'])) {
+    try {
+        // ลบตาราง po_processed ถ้ามีอยู่
+        $con->exec("DROP TABLE IF EXISTS po_processed");
+        // สร้างตารางใหม่จาก po
+        $con->exec("CREATE TABLE po_processed AS SELECT * FROM po");
+        // เพิ่มคอลัม purchase_status
+        $con->exec("ALTER TABLE po_processed ADD purchase_status ENUM('GPO', 'จัดซื้อบริษัท')");
+        echo '<div class="mt-2 text-green-600 text-right">สร้าง/รีเซ็ตตาราง po_processed สำเร็จแล้ว</div>';
+    } catch (PDOException $e) {
+        echo '<div class="mt-2 text-red-600 text-right">เกิดข้อผิดพลาด: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -53,6 +68,15 @@ try {
 <body class="bg-gray-100 min-h-screen">
     <?php include('nav.php'); ?>
     <div class="container mx-auto mt-10">
+        <!-- Create/Reset po_processed Button (always visible) -->
+        <form id="createPoProcessedForm" method="post" class="mb-4">
+            <div class="flex justify-end">
+                <button type="submit" name="create_po_processed" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
+                    onclick="return confirm('การสร้าง/รีเซ็ต po_processed จะลบข้อมูลเดิมทั้งหมดและสร้างใหม่จาก po คุณแน่ใจหรือไม่?');">
+                    สร้าง/รีเซ็ต po_processed
+                </button>
+            </div>
+        </form>
         <!-- Process Button (separate form, always visible) -->
         <form id="processForm" method="post" class="mb-6">
             <div class="flex justify-end">

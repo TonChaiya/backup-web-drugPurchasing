@@ -30,6 +30,18 @@ try {
 } catch (PDOException $e) {
     die("เกิดข้อผิดพลาดในการดึงข้อมูล: " . $e->getMessage());
 }
+
+// ยกเลิกประมวลผล: ลบข้อมูลทั้งหมดใน processed
+if (isset($_POST['cancel_processed'])) {
+    try {
+        $con->exec("DELETE FROM processed");
+        echo '<div class="mt-2 text-red-600 text-center">ยกเลิกประมวลผลเรียบร้อยแล้ว (ลบข้อมูล processed ทั้งหมด)</div>';
+        header("Refresh:0"); // รีเฟรชหน้าเว็บทันที
+        exit;
+    } catch (PDOException $e) {
+        echo '<div class="mt-2 text-red-600 text-center">เกิดข้อผิดพลาด: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    }
+}
 ob_end_flush(); // ส่งข้อมูลทั้งหมดออกไปยังเบราว์เซอร์
 ?>
 
@@ -79,6 +91,16 @@ ob_end_flush(); // ส่งข้อมูลทั้งหมดออกไ�
 
             <!-- Process Button -->
             <button type="submit" name="process" class="bg-blue-500 text-white w-full py-2 rounded-lg hover:bg-blue-600 mb-6">ประมวลผล</button>
+        </form>
+
+        <!-- ปุ่มยกเลิกประมวลผล -->
+        <form method="post" class="mb-6">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+            <button type="submit" name="cancel_processed"
+                class="bg-red-500 text-white w-full py-2 rounded-lg hover:bg-red-600"
+                onclick="return confirm('คุณต้องการลบข้อมูลใน processed ทั้งหมด ใช่หรือไม่?');">
+                ยกเลิกประมวลผล (ลบข้อมูล processed)
+            </button>
         </form>
 
         <!-- Action Buttons -->
