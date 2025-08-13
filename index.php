@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = trim($_POST['password']);
 
         // ดึงข้อมูลผู้ใช้พร้อมกับ role และ Location
-        $stmt = $con->prepare("SELECT * FROM account WHERE username_account = :username_account");
+        $stmt = $con->prepare("SELECT * FROM users WHERE username_account = :username_account");
         $stmt->bindParam(':username_account', $username);
         $stmt->execute();
         $user = $stmt->fetch();
@@ -27,18 +27,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $passwordMatch = false;
 
             // ลองตรวจสอบแบบ hash ก่อน
-            if (password_verify($password, $user['password_account'])) {
+            if (password_verify($password, $user['password'])) {
                 $passwordMatch = true;
             }
             // ถ้าไม่ตรง ลองเปรียบเทียบแบบ plain text
-            elseif ($password === $user['password_account']) {
+            elseif ($password === $user['password']) {
                 $passwordMatch = true;
             }
 
             if ($passwordMatch) {
-                $_SESSION['user_id'] = $user['id_account'];
+                $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username_account'] = $user['username_account'];
-                $_SESSION['location'] = $user['Location']; // เก็บ Location ในเซสชัน
+                $_SESSION['hospital_name'] = $user['hospital_name']; // เก็บ Location ในเซสชัน
                 $_SESSION['role'] = $user['role']; // role: admin หรือ user
 
                 // Redirect ตามบทบาท
