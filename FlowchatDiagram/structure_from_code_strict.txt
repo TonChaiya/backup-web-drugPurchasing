@@ -1,0 +1,73 @@
+/ (root)
+├─ index.php              → include: config.php ; ตารางที่แตะ: users ; คำสั่ง: READ×1 ; รับ POST ; title: Login
+├─ register.php           → include: config.php ; ตารางที่แตะ: users ; คำสั่ง: INSERT×1, READ×1 ; รับ POST ; title: Register
+├─ dashboard.php          → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; title: Dashboard
+├─ display_report.php     → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×5 ; รับ POST
+├─ page-report.php        → include: config.php ; ตารางที่แตะ: po, the, users ; คำสั่ง: READ×3 ; title: Dashboard
+├─ get_po_details.php     → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET
+├─ submit_po_items.php    → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: INSERT×1, READ×2 ; ส่งออก JSON
+├─ edit_po.php            → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: INSERT×1, READ×2, UPDATE×1 ; รับ POST ; รับ GET ; title: แก้ไขใบเบิก
+├─ delete_po_item.php     → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: DELETE×1, READ×1 ; ส่งออก JSON ; รับ GET
+├─ approve_po.php         → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: UPDATE×1 ; ส่งออก JSON ; รับ GET
+├─ cancel_po.php          → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: UPDATE×1 ; ส่งออก JSON
+├─ preview_pdf.php        → รับ GET ; title: Preview PDF
+├─ search_items.php       → include: config.php ; ตารางที่แตะ: drug_list ; คำสั่ง: READ×1 ; ส่งออก JSON ; รับ GET
+├─ logout.php             → —
+├─ config.php             → —
+├─ dashboard-copy.php     → include: config.php ; ตารางที่แตะ: users ; คำสั่ง: READ×1 ; title: Dashboard
+├─ generate_pdf.php       → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; สร้าง PDF ; รับ GET
+├─ generate_po_number.php → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×2
+├─ get_po_by_status.php   → include: config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET
+├─ setup_processed_table.php → include: config.php ; ตารางที่แตะ: account ; คำสั่ง: INSERT×1
+├─ withdrawUser.php       → include: config.php ; ตารางที่แตะ: users ; คำสั่ง: READ×1 ; title: Dashboard
+├─ สำรองแดชบอด.php        → title: Dashboard
+├─ report/              → เพจรายงาน
+│  ├─ all_combined_report.php  → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; title: รายงานการเบิกทั้งหมด (รวมรายการ)
+│  ├─ all_purchases_report.php → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; title: รายงานจัดซื้อทั้งหมด
+│  ├─ cancelled_report.php     → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; title: รายงานที่ยกเลิกแล้ว
+│  ├─ date_range_report.php    → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET ; title: รายงานตามช่วงวันที่
+│  ├─ medicine_report.php      → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET ; title: รายงานรายการยา
+│  ├─ po_number_report.php     → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET ; title: รายงานตามเลขที่ใบเบิก
+│  ├─ search_drug_list.php     → include: ../config.php ; ตารางที่แตะ: drug_list ; คำสั่ง: READ×1 ; ส่งออก JSON ; รับ GET
+└─ admin/
+   ├─ admin.dashboard.php          → ตรวจสิทธิ์ admin ; include: ../config.php, nav.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; title: Admin Dashboard
+   ├─ admin.report.php             → ตรวจสิทธิ์ admin ; include: ../config.php, nav.php ; ตารางที่แตะ: po, po_processed, processed ; คำสั่ง: READ×8, UPDATE×1 ; รับ POST ; title: เลือกประเภทของรายงาน
+   ├─ admin_register.php           → ตรวจสิทธิ์ admin ; include: ../config.php, nav.php ; ตารางที่แตะ: users ; คำสั่ง: DELETE×1, INSERT×1, READ×8, UPDATE×5 ; รับ POST ; รับ GET ; title: Register
+   ├─ admin_withdraw.php           → include: ../config.php, nav.php ; ตารางที่แตะ: users ; คำสั่ง: READ×1 ; title: Dashboard
+   ├─ approve_po.php               → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: UPDATE×1 ; รับ GET
+   ├─ cancel_po.php                → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: UPDATE×1 ; ส่งออก JSON
+   ├─ dasboardrequest copy.php     → ตรวจสิทธิ์ admin ; include: ../config.php, nav.php ; ตารางที่แตะ: processedgpo ; คำสั่ง: READ×1 ; title: Admin Dashboard
+   ├─ dasboardrequest.php          → ตรวจสิทธิ์ admin ; include: ../config.php, nav.php ; ตารางที่แตะ: processedgpo ; คำสั่ง: READ×1 ; title: Admin Dashboard
+   ├─ download_pdf.php             → include: ../config.php ; ตารางที่แตะ: processedgpo ; คำสั่ง: READ×1 ; สร้าง PDF ; รับ GET
+   ├─ generate_pdfforgporequest copy.php → include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; สร้าง PDF ; รับ GET
+   ├─ generate_pdfforgporequest.php → include: ../config.php ; ตารางที่แตะ: processedgpo ; คำสั่ง: READ×1 ; สร้าง PDF ; รับ GET
+   ├─ get_po_by_status.php         → ตรวจสิทธิ์ admin ; include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET
+   ├─ markPending.php              → ตรวจสิทธิ์ admin ; include: ../config.php ; ตารางที่แตะ: po ; คำสั่ง: UPDATE×1
+   ├─ nav.php                      → —
+   ├─ withdraw.php                 → ตรวจสิทธิ์ admin ; include: ../config.php, navbar.php ; ตารางที่แตะ: users ; คำสั่ง: READ×1 ; title: Dashboard
+   └─ AdminReport/
+      ├─ admin_cancelled_report.php → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; title: รายงานจัดซื้อทั้งหมด
+      ├─ admin_date_range_report.php → include: ../../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET ; title: รายงานตามช่วงวันที่
+      ├─ admin_medicine_report.php → include: ../../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET ; title: รายงานรายการยา
+      ├─ admin_po_number_report.php → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×2 ; รับ GET ; title: รายงานตามเลขที่ใบเบิก
+      ├─ all_combined_report.php  → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×2 ; รับ GET ; title: รายงานการเบิกทั้งหมด (รวมรายการ)
+      ├─ all_purchases_report.php → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: po ; คำสั่ง: READ×1 ; รับ GET ; title: รายงานจัดซื้อทั้งหมด
+      ├─ export_po_processed_by_dept_excel.php → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: po_processed ; คำสั่ง: READ×1 ; รับ GET
+      ├─ export_po_processed_excel.php → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: po_processed ; คำสั่ง: READ×1 ; รับ GET
+      ├─ processed_po_report.php  → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: po_processed ; คำสั่ง: READ×1 ; รับ GET ; title: รายงานข้อมูล po_processed
+      ├─ processed_report.php     → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: processed ; คำสั่ง: READ×1 ; รับ GET ; title: รายงาน processed
+      ├─ processed_report_excel.php → ตรวจสิทธิ์ admin ; include: ../../config.php ; ตารางที่แตะ: processed ; คำสั่ง: READ×1 ; รับ GET
+   └─ getjavascript/
+      ├─ adminget_po_by_status copy.php → include: ../../config.php ; ตารางที่แตะ: processedgpo ; คำสั่ง: READ×1 ; รับ GET
+      ├─ adminget_po_by_status.php → include: ../../config.php ; ตารางที่แตะ: processedgpo ; คำสั่ง: READ×1 ; รับ GET
+└─ Purchasing/
+   ├─ duplicates.php           → include: ../config.php ; ตารางที่แตะ: processed, the ; คำสั่ง: READ×2 ; title: Duplicate Entries
+   ├─ generate_report.php      → include: ../config.php ; ตารางที่แตะ: processed ; คำสั่ง: READ×1 ; สร้าง Word ; รับ GET
+   ├─ indexPurchasing.php      → ตรวจสิทธิ์ admin ; include: ../admin/nav.php, ../config.php ; ตารางที่แตะ: po, processed ; คำสั่ง: DELETE×1, READ×3 ; สร้าง Word ; รับ POST ; title: Dashboard
+   ├─ process.php              → include: ../config.php ; ตารางที่แตะ: po, processed ; คำสั่ง: INSERT×2, READ×3 ; รับ POST ; title: Process Page
+   └─ report_generators/
+      ├─ generate_notepdf.php       → สร้าง PDF
+      ├─ generate_pdf.php           → ตารางที่แตะ: medicine_info, processed ; คำสั่ง: READ×4 ; สร้าง PDF ; รับ GET
+      ├─ generate_purchase_pdf.php  → ตารางที่แตะ: medicine_info, processed ; คำสั่ง: READ×4 ; สร้าง PDF ; รับ GET
+      ├─ generate_purchase_word.php → ตารางที่แตะ: medicine_info, processed ; คำสั่ง: READ×4 ; สร้าง Word ; รับ GET
+      ├─ generate_word.php          → ตารางที่แตะ: medicine_info, processed ; คำสั่ง: READ×4 ; สร้าง Word ; รับ GET
