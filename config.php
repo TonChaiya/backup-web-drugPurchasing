@@ -27,4 +27,5 @@ try {
         die("Connection failed. Please try again later.");
     }
 }
+require_once 'config.php';
 ?>
