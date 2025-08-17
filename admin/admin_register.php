@@ -336,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     </style>
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
     <?php include('nav.php'); ?>
 
     <div class="flex flex-user-wrap min-h-screen">

@@ -191,7 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
     <div class="container mx-auto mt-10">
         <div class="bg-white p-8 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold mb-6 text-center">แก้ไขใบเบิกเลขที่: <?php echo htmlspecialchars($po_number); ?></h2>

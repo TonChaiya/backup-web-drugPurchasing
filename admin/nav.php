@@ -25,7 +25,7 @@
             <a href="../admin/admin_withdraw.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">เบิกยา</a>
             <a href="../admin/admin_register.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">register</a>
             <a href="../Purchasing/indexPurchasing.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">จัดซื้อ</a>
-            <a href="admin_drug_list.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">จัดการรายการยา</a>
+            <a href="../admin/admin_drug_list.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">จัดการรายการยา</a>
           </div>
         </div>
       </div>
@@ -67,7 +67,7 @@
       <a href="../admin/admin_withdraw.php" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">เบิกยา</a>
       <a href="../admin/admin_register.php" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">register</a>
       <a href="../Purchasing/indexPurchasing.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">จัดซื้อ</a>    
-      <a href="admin_drug_list.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">จัดการรายการยา</a>
+      <a href="../admin/admin_drug_list.php" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">จัดการรายการยา</a>
     </div>
   </div>
 </nav>

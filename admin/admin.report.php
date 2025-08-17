@@ -65,13 +65,13 @@ if (isset($_POST['create_po_processed'])) {
     <title>เลือกประเภทของรายงาน</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
     <?php include('nav.php'); ?>
-    <div class="container mx-auto mt-10">
+    <div class="max-w-7xl mx-auto mt-8 px-4">
         <!-- Create/Reset po_processed Button (always visible) -->
         <form id="createPoProcessedForm" method="post" class="mb-4">
             <div class="flex justify-end">
-                <button type="submit" name="create_po_processed" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
+                <button type="submit" name="create_po_processed" class="bg-yellow-500 text-white px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
                     onclick="return confirm('การสร้าง/รีเซ็ต po_processed จะลบข้อมูลเดิมทั้งหมดและสร้างใหม่จาก po คุณแน่ใจหรือไม่?');">
                     สร้าง/รีเซ็ต po_processed
                 </button>
@@ -80,7 +80,7 @@ if (isset($_POST['create_po_processed'])) {
         <!-- Process Button (separate form, always visible) -->
         <form id="processForm" method="post" class="mb-6">
             <div class="flex justify-end">
-                <button type="submit" name="process_update" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">ประมวลผลข้อมูล processed → po_processed</button>
+                <button type="submit" name="process_update" class="bg-green-500 text-white px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition">ประมวลผลข้อมูล processed → po_processed</button>
             </div>
         </form>
         <?php
@@ -107,7 +107,7 @@ if (isset($_POST['create_po_processed'])) {
         }
         ?>
         <!-- Main Report Selection Card -->
-        <div class="bg-white p-8 rounded-lg shadow-md">
+        <div class="bg-white/80 backdrop-blur-xl p-8 md:p-10 rounded-2xl shadow-2xl">
             <h2 class="text-2xl font-bold mb-6 text-center">เลือกประเภทของรายงาน</h2>
             <form method="POST" action="" class="main-report-form">
                 <div class="space-y-4">
@@ -256,7 +256,7 @@ if (isset($_POST['create_po_processed'])) {
                     </div>
                 </div>
                 <div class="text-center mt-6">
-                    <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">ดูรายงาน</button>
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition">ดูรายงาน</button>
                 </div>
             </form>
         </div>

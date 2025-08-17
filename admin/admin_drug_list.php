@@ -124,6 +124,17 @@ if (isset($_GET['edit_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
+    <style>
+        /* Minimal dark mode and skeleton styles without Tailwind build step */
+        body.dark { background: #0f172a; color: #e5e7eb; }
+        body.dark .panel { background: rgba(30,41,59,0.6) !important; }
+        body.dark .text-title { color:#93c5fd !important; }
+        body.dark .card { background: rgba(15,23,42,0.6) !important; border-color:#334155 !important; color:#e5e7eb; }
+        body.dark input, body.dark .inputish { background: rgba(15,23,42,0.6) !important; border-color:#334155 !important; color:#e5e7eb !important; }
+        .skeleton { animation: pulse 1.2s infinite ease-in-out; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 400% 100%; }
+        @keyframes pulse { 0%{background-position:100% 0} 100%{background-position: -100% 0} }
+    </style>
+
 <body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
     <?php include_once __DIR__ . '/nav.php'; ?>
 
@@ -140,18 +151,24 @@ if (isset($_GET['edit_id'])) {
     </script>
     <?php endif; ?>
 
-    <div class="flex flex-col md:flex-row min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row min-h-screen gap-6">
         <!-- Sidebar: Drug List -->
-        <aside class="md:w-1/3 bg-white shadow-xl rounded-lg p-6 flex flex-col m-4 md:m-8">
+        <aside class="md:w-1/2 bg-white/70 backdrop-blur-xl shadow-2xl rounded-2xl p-6 md:p-8 flex flex-col">
                 <div id="searchHelper">
                 <?php if (!empty($search) && isset($searchTooShort) && $searchTooShort): ?>
                     <p class="text-xs text-red-600 mt-1">พิมพ์อย่างน้อย 3 ตัวอักษรเพื่อค้นหา</p>
                 <?php endif; ?>
                 </div>
 
-            <h2 class="text-2xl font-extrabold mb-6 text-blue-700 tracking-tight">รายการยา</h2>
+            <h2 class="text-2xl md:text-3xl font-extrabold mb-6 text-blue-700 tracking-tight flex items-center gap-3">
+                <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 text-white shadow">💊</span>
+                รายการยา
+            </h2>
             <form method="get" class="mb-4" id="drugSearchForm">
-                <input type="text" name="search" id="drugSearchInput" value="<?php echo htmlspecialchars($search); ?>" placeholder="ค้นหาชื่อยา..." class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                <div class="relative">
+                    <input type="text" name="search" id="drugSearchInput" value="<?php echo htmlspecialchars($search); ?>" placeholder="ค้นหาชื่อยา..." class="w-full pl-11 pr-4 py-2.5 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white shadow-sm">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500">🔎</span>
+                </div>
                 <?php if (isset($_GET['edit_id'])): ?>
                     <input type="hidden" name="edit_id" value="<?php echo intval($_GET['edit_id']); ?>">
                 <?php endif; ?>
@@ -226,6 +243,8 @@ if (isset($_GET['edit_id'])) {
                     });
                 });
             </script>
+            <div class="text-sm text-gray-500 mb-3">รายการทั้งหมด: <?php echo count($drugs); ?> รายการ</div>
+            </script>
 
             <div id="drugListContainer">
                 <div class="overflow-y-auto" style="max-height: 500px;">
@@ -244,10 +263,12 @@ if (isset($_GET['edit_id'])) {
             </div>
             <hr class="my-6">
             <a href="admin_drug_list.php" class="block text-center text-blue-600 hover:underline font-semibold">+ เพิ่มรายการใหม่</a>
+            <a href="admin_drug_import.php" class="mt-3 block text-center bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-purple-700 transition">อัปโหลดไฟล์รายการยา (Excel)</a>
+
         </aside>
         <!-- Main Content: Add/Edit/Delete Form -->
-        <main class="flex-1 flex justify-center items-center p-4 md:p-8">
-            <div class="w-full max-w-xl">
+        <main class="md:w-1/2 flex justify-center items-start p-4 md:p-8">
+            <div class="w-full max-w-3xl">
                 <?php if ($editDrug): ?>
                     <div class="bg-white rounded-xl shadow-xl p-8">
                         <h2 class="text-2xl font-bold mb-6 text-blue-700">แก้ไข/ลบรายการยา</h2>
@@ -255,23 +276,23 @@ if (isset($_GET['edit_id'])) {
                             <input type="hidden" name="id_code" value="<?php echo $editDrug['id_code']; ?>">
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Working Code</label>
-                                <input type="text" name="working_code" value="<?php echo htmlspecialchars($editDrug['working_code']); ?>" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="working_code" value="<?php echo htmlspecialchars($editDrug['working_code']); ?>" class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Name Item Code</label>
-                                <input type="text" name="name_item_code" value="<?php echo htmlspecialchars($editDrug['name_item_code']); ?>" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="name_item_code" value="<?php echo htmlspecialchars($editDrug['name_item_code']); ?>" class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Format Item</label>
-                                <input type="text" name="format_item" value="<?php echo htmlspecialchars($editDrug['format_item']); ?>" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="format_item" value="<?php echo htmlspecialchars($editDrug['format_item']); ?>" class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Packing Code</label>
-                                <input type="text" name="packing_code" value="<?php echo htmlspecialchars($editDrug['packing_code']); ?>" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="packing_code" value="<?php echo htmlspecialchars($editDrug['packing_code']); ?>" class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Price Unit Code</label>
-                                <input type="text" name="price_unit_code" value="<?php echo htmlspecialchars($editDrug['price_unit_code']); ?>" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="price_unit_code" value="<?php echo htmlspecialchars($editDrug['price_unit_code']); ?>" class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div class="flex gap-2 mt-6">
                                 <button type="submit" name="edit_drug" class="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition">บันทึกการแก้ไข</button>
@@ -286,23 +307,23 @@ if (isset($_GET['edit_id'])) {
                         <form method="post" class="space-y-4">
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Working Code</label>
-                                <input type="text" name="working_code" placeholder="Working Code" required class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="working_code" placeholder="Working Code" required class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Name Item Code</label>
-                                <input type="text" name="name_item_code" placeholder="Name Item Code" required class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="name_item_code" placeholder="Name Item Code" required class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Format Item</label>
-                                <input type="text" name="format_item" placeholder="Format Item" required class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="format_item" placeholder="Format Item" required class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Packing Code</label>
-                                <input type="text" name="packing_code" placeholder="Packing Code" required class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="packing_code" placeholder="Packing Code" required class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-1 font-medium">Price Unit Code</label>
-                                <input type="text" name="price_unit_code" placeholder="Price Unit Code" required class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                                <input type="text" name="price_unit_code" placeholder="Price Unit Code" required class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             </div>
                             <button type="submit" name="add_drug" class="bg-green-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-600 transition">เพิ่มรายการ</button>
                         </form>

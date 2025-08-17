@@ -65,7 +65,7 @@ ob_end_flush(); // ส่งข้อมูลทั้งหมดออกไ�
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-<body>
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
     <div class="max-w-4xl mx-auto p-6">
         <!-- ฟอร์มสำหรับการเลือกสถานะและการประมวลผล -->
         <form action="process.php" method="post" onsubmit="return validateForm()">
